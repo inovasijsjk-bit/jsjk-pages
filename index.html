@@ -1,11 +1,28 @@
-<!DOCTYPE html>
-<html lang="ms">
-<head>
-  <meta charset="UTF-8" />
-  <title>JSJK Anti-Scam Portal</title>
-</head>
-<body>
-  <h1>JSJK Anti-Scam Portal</h1>
-  <p>Website ini berjaya di-deploy menggunakan Cloudflare Pages.</p>
-</body>
-</html>
+<hr />
+<h3>Semak Nombor (MVP)</h3>
+<select id="type">
+  <option value="phone">Telefon</option>
+  <option value="account">Akaun</option>
+</select>
+<input id="value" placeholder="Masukkan nombor..." />
+<button id="btn">Semak</button>
+
+<pre id="out"></pre>
+
+<script>
+  const API_BASE = "https://first-worker.ccid-scambot.workers.dev";
+
+  document.getElementById("btn").addEventListener("click", async () => {
+    const type = document.getElementById("type").value;
+    const value = document.getElementById("value").value;
+
+    const res = await fetch(API_BASE + "/api/check", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ type, value }),
+    });
+
+    const data = await res.json();
+    document.getElementById("out").textContent = JSON.stringify(data, null, 2);
+  });
+</script>
