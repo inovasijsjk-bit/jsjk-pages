@@ -1,28 +1,133 @@
-<hr />
-<h3>Semak Nombor (MVP)</h3>
-<select id="type">
-  <option value="phone">Telefon</option>
-  <option value="account">Akaun</option>
-</select>
-<input id="value" placeholder="Masukkan nombor..." />
-<button id="btn">Semak</button>
+<!doctype html>
+<html lang="ms">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CCID ScamBOT</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; max-width: 900px; }
+    .card { border: 1px solid #ddd; border-radius: 10px; padding: 14px; margin-bottom: 14px; }
+    #chat { height: 420px; overflow: auto; border: 1px solid #ddd; border-radius: 10px; padding: 10px; background: #fafafa; }
+    .msg { margin: 10px 0; padding: 10px; border-radius: 10px; max-width: 85%; white-space: pre-wrap; }
+    .user { margin-left: auto; background: #e8f0fe; }
+    .bot { margin-right: auto; background: #e9f7ef; }
+    .meta { font-size: 12px; color: #555; margin-top: 6px; }
+    .row { display: flex; gap: 10px; margin-top: 10px; }
+    input[type="text"] { flex: 1; padding: 10px; border-radius: 10px; border: 1px solid #ccc; }
+    button { padding: 10px 14px; border-radius: 10px; border: 1px solid #ccc; cursor: pointer; }
+    .small { font-size: 12px; color: #666; }
+    code { background:#f2f2f2; padding:2px 6px; border-radius:6px; }
+  </style>
+</head>
+<body>
 
-<pre id="out"></pre>
+  <h1>CCID ScamBOT</h1>
+  <p class="small">
+    Chatbot rujukan anti-scam (BM/EN). Untuk pengesahan nombor, sila rujuk portal rasmi seperti Semak Mule.
+  </p>
+
+  <div class="card">
+    <div><strong>API Status:</strong> <span id="status">Checking...</span></div>
+    <div class="small">API Base: <code id="apibase"></code></div>
+  </div>
+
+  <div class="card">
+    <div id="chat"></div>
+
+    <div class="row">
+      <input id="msg" type="text" placeholder="Taip mesej di sini... (contoh: Tolong semak 012-3456789)" />
+      <button id="send">Hantar</button>
+    </div>
+
+    <p class="small" id="hint"></p>
+  </div>
+
+  <div class="card">
+    <strong>Nota keselamatan</strong>
+    <ul class="small">
+      <li>Jangan kongsi OTP/TAC/PIN/kata laluan atau maklumat sensitif.</li>
+      <li>Jika anda sedang berdepan scam sekarang, hentikan komunikasi dan hubungi bank segera.</li>
+    </ul>
+  </div>
 
 <script>
+  // ✅ Tukar URL ini jika Worker anda berbeza
   const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
 
-  document.getElementById("btn").addEventListener("click", async () => {
-    const type = document.getElementById("type").value;
-    const value = document.getElementById("value").value;
+  document.getElementById("apibase").textContent = API_BASE;
 
-    const res = await fetch(API_BASE + "/api/check", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ type, value }),
-    });
+  const chatEl = document.getElementById("chat");
+  const statusEl = document.getElementById("status");
+  const hintEl = document.getElementById("hint");
 
-    const data = await res.json();
-    document.getElementById("out").textContent = JSON.stringify(data, null, 2);
+  function addMsg(text, who, meta="") {
+    const wrap = document.createElement("div");
+    wrap.className = "msg " + who;
+    wrap.textContent = text;
+
+    if (meta) {
+      const m = document.createElement("div");
+      m.className = "meta";
+      m.textContent = meta;
+      wrap.appendChild(m);
+    }
+
+    chatEl.appendChild(wrap);
+    chatEl.scrollTop = chatEl.scrollHeight;
+  }
+
+  async function healthCheck() {
+    try {
+      const res = await fetch(API_BASE + "/");
+      const data = await res.json();
+      statusEl.textContent = data.ok ? "OK ✅" : "Not OK ❌";
+    } catch (e) {
+      statusEl.textContent = "Failed ❌";
+    }
+  }
+
+  async function sendChat(message) {
+    addMsg(message, "user");
+
+    try {
+      const res = await fetch(API_BASE + "/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message })
+      });
+      const data = await res.json();
+
+      const meta = `lang=${data.lang} | intent=${data.intent} | risk=${data.risk_level}`;
+      addMsg(data.reply?.message || "(tiada jawapan)", "bot", meta);
+
+      // hint untuk semakan nombor jika bot detect last4
+      if (data.slots && data.slots.number_last4) {
+        hintEl.textContent =
+          `Saya kesan nombor berakhir dengan ****${data.slots.number_last4}. Anda juga boleh guna endpoint /api/check untuk paparan langkah rasmi.`;
+      } else {
+        hintEl.textContent = "";
+      }
+    } catch (e) {
+      addMsg("Ralat: tidak dapat hubungi API. Semak URL API_BASE atau status Worker.", "bot");
+    }
+  }
+
+  document.getElementById("send").addEventListener("click", () => {
+    const input = document.getElementById("msg");
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = "";
+    sendChat(text);
   });
+
+  document.getElementById("msg").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") document.getElementById("send").click();
+  });
+
+  // init
+  healthCheck();
+  addMsg("Hai! Saya CCID ScamBOT. Taip situasi anda atau nombor untuk semakan (contoh: Tolong semak 012-3456789).", "bot");
 </script>
+
+</body>
+</html>
