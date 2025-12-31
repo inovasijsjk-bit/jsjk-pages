@@ -117,7 +117,7 @@
         radial-gradient(700px 300px at 20% 10%, rgba(59,130,246,.12), transparent 60%),
         radial-gradient(700px 300px at 90% 10%, rgba(34,197,94,.08), transparent 60%),
         rgba(255,255,255,.03);
-      scroll-behavior: smooth; /* smoother jumps */
+      scroll-behavior: smooth;
     }
 
     .msg{
@@ -220,9 +220,7 @@
       opacity: .9;
       animation: blink .9s steps(1,end) infinite;
     }
-    @keyframes blink{
-      50% { opacity: 0; }
-    }
+    @keyframes blink{ 50% { opacity: 0; } }
   </style>
 </head>
 <body>
@@ -316,7 +314,7 @@
     const clearBtn = document.getElementById("clear");
     const msgInput = document.getElementById("msg");
 
-    // typing cancellation token
+    // cancellation token for typing
     let typingToken = 0;
 
     function setHint(text) {
@@ -329,11 +327,11 @@
       hintEl.textContent = text;
     }
 
-    // Throttled scroll to bottom (avoid jumpiness)
+    // throttled scroll
     let lastScrollAt = 0;
     function scrollBottomThrottled(force = false) {
       const now = performance.now();
-      if (!force && (now - lastScrollAt) < 80) return; // 80ms throttle
+      if (!force && (now - lastScrollAt) < 70) return; // tighter for fast typing
       lastScrollAt = now;
       chatEl.scrollTop = chatEl.scrollHeight;
     }
@@ -343,12 +341,10 @@
       wrap.className = "msg " + who;
 
       const content = document.createElement("div");
-      // we will update text node directly (fast)
       const textNode = document.createTextNode("");
       content.appendChild(textNode);
 
       wrap.appendChild(content);
-
       chatEl.appendChild(wrap);
       scrollBottomThrottled(true);
 
@@ -364,7 +360,6 @@
     }
 
     function renderTextWithLinks(container, text) {
-      // rebuild at the end only (avoid reflow during typing)
       container.innerHTML = "";
       const parts = String(text || "").split(/(\s+)/);
       parts.forEach(p => {
@@ -382,16 +377,14 @@
     }
 
     function addUserMsg(text) {
-      const { wrap, content } = createMsgBubble("user");
+      const { content } = createMsgBubble("user");
       renderTextWithLinks(content, text);
-      return wrap;
     }
 
     function addBotDots() {
       const { wrap, content } = createMsgBubble("bot");
       content.innerHTML = `<span class="typingDots"><span></span><span></span><span></span></span>`;
       wrap.id = "typingDots";
-      return wrap;
     }
 
     function removeBotDots() {
@@ -406,18 +399,15 @@
       clearBtn.disabled = isBusy;
     }
 
-    // Smooth REAL typewriter:
-    // - append 1 char at a time
-    // - BUT update DOM in batches (frame-based) to avoid lag
+    // FAST typing profile: still 1-by-1 char, but very fast + low pauses
     async function typeBotMessageSmooth(fullText, meta, profile) {
       const token = ++typingToken;
 
       const {
-        cps = 28,              // chars per second target
-        batchMs = 35,          // update DOM every ~35ms (smooth)
-        scrollMs = 90,         // scroll throttle already ~80ms
-        pausePunct = 130,      // extra pause after punctuation
-        pauseParagraph = 220,  // extra pause after blank line
+        cps = 55,             // ✅ very fast
+        batchMs = 22,         // DOM flush every ~22ms (smooth)
+        pausePunct = 45,      // very small pause after punctuation
+        pauseParagraph = 80,  // small pause at paragraph break
         cursorChar = "▍",
       } = (profile || {});
 
@@ -433,45 +423,36 @@
       let i = 0;
       let out = "";
 
-      // timing
-      const charDelay = Math.max(10, Math.floor(1000 / Math.max(10, cps)));
+      const charDelay = Math.max(6, Math.floor(1000 / Math.max(10, cps)));
       let nextDomFlushAt = performance.now() + batchMs;
 
-      // To simulate "human typing": small randomness
       function jitter(n) {
-        const r = (Math.random() * 0.18 + 0.91); // 0.91 - 1.09
+        // tiny jitter only (still looks human but fast)
+        const r = (Math.random() * 0.10 + 0.95); // 0.95 - 1.05
         return Math.floor(n * r);
       }
 
-      // main loop
       while (i < text.length) {
-        if (token !== typingToken) return; // cancelled
+        if (token !== typingToken) return;
 
         const ch = text[i++];
         out += ch;
 
-        // Decide extra pause
         let extra = 0;
         if (".,!?;:".includes(ch)) extra += pausePunct;
-        // detect paragraph break
         if (ch === "\n" && text[i] === "\n") extra += pauseParagraph;
 
         const now = performance.now();
-
-        // Flush DOM only at intervals (reduces jump/lag)
         if (now >= nextDomFlushAt || i === text.length) {
           textNode.nodeValue = out;
           scrollBottomThrottled(false);
           nextDomFlushAt = now + batchMs;
-          // Let browser paint (smooth)
           await new Promise(r => requestAnimationFrame(r));
         }
 
-        // Per-char timing (still 1 by 1)
         await new Promise(r => setTimeout(r, jitter(charDelay + extra)));
       }
 
-      // Remove cursor and linkify once at end
       if (cursor && cursor.parentNode) cursor.remove();
       renderTextWithLinks(content, out);
       scrollBottomThrottled(true);
@@ -532,14 +513,11 @@
           (typeof data.risk_score === "number") ? `score=${data.risk_score}` : null,
         ].filter(Boolean).join(" | ");
 
-        // Profile: high risk slower (easier to read), normal a bit faster
-        const isHigh = (data.risk_level === "HIGH");
+        // ✅ All fast (including high risk)
         await typeBotMessageSmooth(
           data.reply?.message || "(tiada jawapan)",
           meta,
-          isHigh
-            ? { cps: 22, batchMs: 40, pausePunct: 170, pauseParagraph: 260 }
-            : { cps: 30, batchMs: 30, pausePunct: 130, pauseParagraph: 220 }
+          { cps: 58, batchMs: 20, pausePunct: 40, pauseParagraph: 70 }
         );
 
         if (data.slots && data.slots.number_last4) {
@@ -552,7 +530,7 @@
         await typeBotMessageSmooth(
           `Ralat: ${e.message || e}`,
           "",
-          { cps: 34, batchMs: 28, pausePunct: 110, pauseParagraph: 180 }
+          { cps: 62, batchMs: 18, pausePunct: 30, pauseParagraph: 60 }
         );
         setHint("Semak API_BASE, CORS, dan pastikan endpoint /api/chat wujud.");
       } finally {
@@ -576,7 +554,7 @@
         removeBotDots();
 
         if (!data.ok) {
-          await typeBotMessageSmooth("Semakan gagal. Sila cuba lagi.", "", { cps: 34, batchMs: 28 });
+          await typeBotMessageSmooth("Semakan gagal. Sila cuba lagi.", "", { cps: 62, batchMs: 18 });
           return;
         }
 
@@ -589,11 +567,11 @@
           `Langkah:\n- ${(data.official_check?.steps || []).join("\n- ")}\n\n` +
           `Nota: Semakan rasmi perlu dibuat di portal (bot tidak mengesahkan muktamad).`;
 
-        await typeBotMessageSmooth(reply, "", { cps: 28, batchMs: 32, pausePunct: 120, pauseParagraph: 210 });
+        await typeBotMessageSmooth(reply, "", { cps: 58, batchMs: 20, pausePunct: 40, pauseParagraph: 70 });
         msgInput.value = "";
       } catch (e) {
         removeBotDots();
-        await typeBotMessageSmooth(`Ralat semakan: ${e.message || e}`, "", { cps: 34, batchMs: 28 });
+        await typeBotMessageSmooth(`Ralat semakan: ${e.message || e}`, "", { cps: 62, batchMs: 18 });
         setHint("Jika ini berlaku, semak log Worker (wrangler tail) dan CORS.");
       } finally {
         setBusy(false);
@@ -616,11 +594,10 @@
     quickBtn.addEventListener("click", quickCheckNumber);
 
     clearBtn.addEventListener("click", () => {
-      // cancel typing immediately
-      typingToken++;
+      typingToken++; // cancel typing
       chatEl.innerHTML = "";
       setHint("");
-      typeBotMessageSmooth("Chat dibersihkan. Anda boleh mula semula.", "", { cps: 34, batchMs: 28 });
+      typeBotMessageSmooth("Chat dibersihkan. Anda boleh mula semula.", "", { cps: 62, batchMs: 18 });
       msgInput.focus();
     });
 
@@ -636,7 +613,7 @@
     typeBotMessageSmooth(
       "Hai! Saya CCID ScamBOT. Taip situasi anda atau nombor untuk semakan (contoh: Tolong semak 012-3456789).",
       "",
-      { cps: 34, batchMs: 28, pausePunct: 110, pauseParagraph: 180 }
+      { cps: 62, batchMs: 18, pausePunct: 30, pauseParagraph: 60 }
     );
   </script>
 </body>
