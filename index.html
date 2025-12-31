@@ -25,7 +25,7 @@
                   var(--bg);
       color: var(--text);
     }
-    a{ color: #93c5fd; }
+    a{ color:#93c5fd; }
     .container{ max-width: 1100px; margin: 0 auto; padding: 18px; }
 
     .topbar{
@@ -64,13 +64,13 @@
     .dot.ok{ background: var(--ok); }
     .dot.bad{ background: var(--danger); }
 
+    /* Layout: desktop 2 col, mobile 1 col */
     .layout{
       display:grid;
       grid-template-columns: 320px 1fr;
       gap: 14px;
       margin-top: 14px;
     }
-    @media (max-width: 900px){ .layout{ grid-template-columns: 1fr; } }
 
     .panel{
       border:1px solid var(--stroke);
@@ -107,10 +107,8 @@
     .qbtn .d{ font-size:12px; color: var(--muted); margin-top:4px; }
 
     .chatWrap{ display:flex; flex-direction:column; height: 74vh; min-height: 560px; }
-    @media (max-width: 900px){ .chatWrap{ height: 70vh; min-height: 520px; } }
-
     #chat{
-      flex: 1;
+      flex:1;
       overflow:auto;
       padding: 14px;
       background:
@@ -160,7 +158,7 @@
       border: 1px solid rgba(255,255,255,.16);
       background: rgba(0,0,0,.18);
       color: var(--text);
-      outline: none;
+      outline:none;
     }
     input[type="text"]::placeholder{ color: rgba(255,255,255,.55); }
 
@@ -172,7 +170,7 @@
       color: var(--text);
       cursor:pointer;
       transition: transform .08s ease, background .12s ease;
-      display:inline-flex; align-items:center; gap:8px;
+      display:inline-flex; align-items:center; justify-content:center; gap:8px;
       white-space:nowrap;
     }
     .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); }
@@ -221,6 +219,65 @@
       animation: blink .9s steps(1,end) infinite;
     }
     @keyframes blink{ 50% { opacity: 0; } }
+
+    /* ===== Mobile-first improvements ===== */
+    @media (max-width: 900px){
+      /* Make chat first on mobile, quick actions below */
+      .layout{ display:flex; flex-direction:column; }
+      .leftPanel{ order: 2; }
+      .rightPanel{ order: 1; }
+      .chatWrap{ height: 72vh; min-height: 520px; }
+    }
+
+    @media (max-width: 600px){
+      .container{ padding: 12px; }
+
+      .topbar{
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .statusRow{
+        justify-content: flex-start;
+        width: 100%;
+      }
+
+      /* Hide origin pill on small screens (too long) */
+      .statusRow .pill:last-child{ display:none; }
+
+      .composer{
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      #msg{
+        width: 100%;
+        flex: 1 1 100%;
+      }
+
+      #quickCheck, #send{
+        flex: 1 1 calc(50% - 4px);
+        padding: 12px 10px;
+      }
+
+      .panelHeader{ padding: 10px 12px; }
+      .panelBody{ padding: 10px 12px; }
+
+      .qbtn{ padding: 10px 10px; }
+    }
+
+    /* Collapsible quick actions for mobile */
+    .collapseBtn{
+      display:none;
+      width:100%;
+      margin-top:10px;
+    }
+    @media (max-width: 600px){
+      .collapseBtn{ display:inline-flex; }
+      .quickGrid{ display:none; }
+      .quickGrid.open{ display:grid; }
+    }
   </style>
 </head>
 <body>
@@ -240,7 +297,8 @@
     </div>
 
     <div class="layout">
-      <div class="panel">
+      <!-- LEFT: Quick actions -->
+      <div class="panel leftPanel">
         <div class="panelHeader">
           <h2>Quick Actions</h2>
           <button id="clear" class="btn danger" title="Padam chat">🧹 Clear</button>
@@ -250,7 +308,9 @@
             Pilih situasi anda untuk auto-isi mesej. Anda juga boleh terus taip.
           </div>
 
-          <div class="quickGrid">
+          <button id="toggleQuick" class="btn collapseBtn">📌 Tunjuk / Sorok Quick Actions</button>
+
+          <div class="quickGrid" id="quickGrid">
             <button class="qbtn" data-fill="Dia minta OTP/TAC sekarang. Apa perlu saya buat?">
               <div class="t">🚨 Saya sedang dihubungi</div>
               <div class="d">Arahan segera (hentikan komunikasi, jangan kongsi OTP).</div>
@@ -281,7 +341,8 @@
         </div>
       </div>
 
-      <div class="panel chatWrap">
+      <!-- RIGHT: Chat -->
+      <div class="panel chatWrap rightPanel">
         <div class="panelHeader">
           <h2>Chat</h2>
           <div class="small">Enter untuk hantar • Quick Check untuk semakan rasmi</div>
@@ -313,6 +374,8 @@
     const quickBtn = document.getElementById("quickCheck");
     const clearBtn = document.getElementById("clear");
     const msgInput = document.getElementById("msg");
+    const toggleQuickBtn = document.getElementById("toggleQuick");
+    const quickGrid = document.getElementById("quickGrid");
 
     // cancellation token for typing
     let typingToken = 0;
@@ -331,7 +394,7 @@
     let lastScrollAt = 0;
     function scrollBottomThrottled(force = false) {
       const now = performance.now();
-      if (!force && (now - lastScrollAt) < 70) return; // tighter for fast typing
+      if (!force && (now - lastScrollAt) < 70) return;
       lastScrollAt = now;
       chatEl.scrollTop = chatEl.scrollHeight;
     }
@@ -397,17 +460,18 @@
       quickBtn.disabled = isBusy;
       msgInput.disabled = isBusy;
       clearBtn.disabled = isBusy;
+      if (toggleQuickBtn) toggleQuickBtn.disabled = isBusy;
     }
 
-    // FAST typing profile: still 1-by-1 char, but very fast + low pauses
+    // FAST typing profile: very fast but still real 1-by-1 char
     async function typeBotMessageSmooth(fullText, meta, profile) {
       const token = ++typingToken;
 
       const {
-        cps = 55,             // ✅ very fast
-        batchMs = 22,         // DOM flush every ~22ms (smooth)
-        pausePunct = 45,      // very small pause after punctuation
-        pauseParagraph = 80,  // small pause at paragraph break
+        cps = 55,
+        batchMs = 22,
+        pausePunct = 45,
+        pauseParagraph = 80,
         cursorChar = "▍",
       } = (profile || {});
 
@@ -427,8 +491,7 @@
       let nextDomFlushAt = performance.now() + batchMs;
 
       function jitter(n) {
-        // tiny jitter only (still looks human but fast)
-        const r = (Math.random() * 0.10 + 0.95); // 0.95 - 1.05
+        const r = (Math.random() * 0.10 + 0.95);
         return Math.floor(n * r);
       }
 
@@ -513,7 +576,6 @@
           (typeof data.risk_score === "number") ? `score=${data.risk_score}` : null,
         ].filter(Boolean).join(" | ");
 
-        // ✅ All fast (including high risk)
         await typeBotMessageSmooth(
           data.reply?.message || "(tiada jawapan)",
           meta,
@@ -579,6 +641,13 @@
       }
     }
 
+    // Toggle quick actions on mobile
+    if (toggleQuickBtn) {
+      toggleQuickBtn.addEventListener("click", () => {
+        quickGrid.classList.toggle("open");
+      });
+    }
+
     // Event listeners
     sendBtn.addEventListener("click", () => {
       const text = msgInput.value.trim();
@@ -605,6 +674,10 @@
       btn.addEventListener("click", () => {
         msgInput.value = btn.getAttribute("data-fill") || "";
         msgInput.focus();
+        // close quick list on mobile after choosing
+        if (window.matchMedia("(max-width: 600px)").matches) {
+          quickGrid.classList.remove("open");
+        }
       });
     });
 
