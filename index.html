@@ -7,11 +7,9 @@
   <style>
     :root{
       --bg: #0b1220;
-      --panel: rgba(255,255,255,.06);
       --stroke: rgba(255,255,255,.14);
       --text: rgba(255,255,255,.92);
       --muted: rgba(255,255,255,.68);
-      --accent: #3b82f6;
       --ok: #22c55e;
       --danger: #ef4444;
       --shadow: 0 18px 50px rgba(0,0,0,.45);
@@ -29,6 +27,7 @@
     }
     a{ color: #93c5fd; }
     .container{ max-width: 1100px; margin: 0 auto; padding: 18px; }
+
     .topbar{
       display:flex; align-items:center; justify-content:space-between; gap: 12px;
       padding: 14px 16px;
@@ -48,6 +47,7 @@
     .title{ display:flex; flex-direction:column; gap:2px; }
     .title h1{ margin:0; font-size:16px; }
     .title .sub{ margin:0; font-size:12px; color: var(--muted); }
+
     .statusRow{
       display:flex; align-items:center; gap:10px; flex-wrap:wrap;
       justify-content:flex-end; font-size:12px; color: var(--muted);
@@ -118,6 +118,7 @@
         radial-gradient(700px 300px at 90% 10%, rgba(34,197,94,.08), transparent 60%),
         rgba(255,255,255,.03);
     }
+
     .msg{
       max-width: 86%;
       padding: 10px 12px;
@@ -195,8 +196,10 @@
       font-size: 12px;
     }
 
+    /* Typing dots (sebelum teks mula keluar) */
     .typing{
       display:inline-flex; gap:4px; align-items:center;
+      padding: 2px 0;
     }
     .typing span{
       width:6px; height:6px; border-radius:999px;
@@ -208,6 +211,18 @@
     @keyframes bounce{
       0%,80%,100%{ transform: translateY(0); opacity:.55; }
       40%{ transform: translateY(-4px); opacity:1; }
+    }
+
+    /* Cursor */
+    .cursor{
+      display:inline-block;
+      width: 8px;
+      margin-left: 2px;
+      opacity: .9;
+      animation: blink .9s steps(1,end) infinite;
+    }
+    @keyframes blink{
+      50% { opacity: 0; }
     }
   </style>
 </head>
@@ -229,7 +244,6 @@
     </div>
 
     <div class="layout">
-      <!-- LEFT: Quick actions -->
       <div class="panel">
         <div class="panelHeader">
           <h2>Quick Actions</h2>
@@ -271,273 +285,6 @@
         </div>
       </div>
 
-      <!-- RIGHT: Chat -->
       <div class="panel chatWrap">
         <div class="panelHeader">
-          <h2>Chat</h2>
-          <div class="small">Enter untuk hantar • Quick Check untuk semakan rasmi</div>
-        </div>
-
-        <div id="chat" aria-live="polite"></div>
-
-        <div class="composer">
-          <input id="msg" type="text" placeholder="Taip mesej… (contoh: Tolong semak 012-3456789)" autocomplete="off" />
-          <button id="quickCheck" class="btn" title="Semak nombor/akaun secara terus">✅ Quick Check</button>
-          <button id="send" class="btn primary">➡️ Send</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    // Tukar ini jika URL Worker anda berbeza
-    const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
-
-    const ORIGIN = window.location.origin;
-    document.getElementById("origin").textContent = ORIGIN;
-
-    const chatEl = document.getElementById("chat");
-    const statusEl = document.getElementById("status");
-    const dotEl = document.getElementById("dot");
-    const hintEl = document.getElementById("hint");
-    const sendBtn = document.getElementById("send");
-    const quickBtn = document.getElementById("quickCheck");
-    const clearBtn = document.getElementById("clear");
-    const msgInput = document.getElementById("msg");
-
-    function setHint(text) {
-      if (!text) {
-        hintEl.style.display = "none";
-        hintEl.textContent = "";
-        return;
-      }
-      hintEl.style.display = "block";
-      hintEl.textContent = text;
-    }
-
-    function addMsg(text, who, meta = "") {
-      const wrap = document.createElement("div");
-      wrap.className = "msg " + who;
-
-      // Render URLs as clickable safely
-      const safe = document.createElement("div");
-      const str = String(text || "");
-      const parts = str.split(/(\s+)/);
-
-      parts.forEach(p => {
-        if (/^https?:\/\/[^\s]+$/.test(p)) {
-          const a = document.createElement("a");
-          a.href = p;
-          a.target = "_blank";
-          a.rel = "noreferrer";
-          a.textContent = p;
-          safe.appendChild(a);
-        } else {
-          safe.appendChild(document.createTextNode(p));
-        }
-      });
-
-      wrap.appendChild(safe);
-
-      if (meta) {
-        const m = document.createElement("div");
-        m.className = "meta";
-        m.textContent = meta;
-        wrap.appendChild(m);
-      }
-
-      chatEl.appendChild(wrap);
-      chatEl.scrollTop = chatEl.scrollHeight;
-    }
-
-    function addTyping(){
-      const wrap = document.createElement("div");
-      wrap.className = "msg bot";
-      wrap.id = "typing";
-      const t = document.createElement("div");
-      t.className = "typing";
-      t.innerHTML = "<span></span><span></span><span></span>";
-      wrap.appendChild(t);
-      chatEl.appendChild(wrap);
-      chatEl.scrollTop = chatEl.scrollHeight;
-    }
-
-    function removeTyping(){
-      const el = document.getElementById("typing");
-      if (el) el.remove();
-    }
-
-    async function typeBotMessage(fullText, meta = "", delay = 700) {
-      const parts = String(fullText)
-        .split(/\n\n+/)      // pecah ikut perenggan
-        .map(p => p.trim())
-        .filter(Boolean);
-
-      let first = true;
-      for (const part of parts) {
-        await new Promise(r => setTimeout(r, delay));
-        if (first) {
-          addMsg(part, "bot", meta);
-          first = false;
-        } else {
-          addMsg(part, "bot");
-        }
-      }
-    }
-
-    function setBusy(isBusy) {
-      sendBtn.disabled = isBusy;
-      quickBtn.disabled = isBusy;
-      msgInput.disabled = isBusy;
-      clearBtn.disabled = isBusy;
-    }
-
-    async function healthCheck() {
-      try {
-        const res = await fetch(API_BASE + "/", { method: "GET" });
-        const txt = await res.text();
-        let data = null;
-        try { data = JSON.parse(txt); } catch {}
-
-        if (res.ok && data && data.ok) {
-          statusEl.textContent = "API OK";
-          dotEl.className = "dot ok";
-        } else if (res.ok) {
-          statusEl.textContent = "API Reachable";
-          dotEl.className = "dot ok";
-        } else {
-          statusEl.textContent = `API Error ${res.status}`;
-          dotEl.className = "dot bad";
-        }
-      } catch (e) {
-        statusEl.textContent = "API Failed";
-        dotEl.className = "dot bad";
-      }
-    }
-
-    async function postJson(url, payload) {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      const text = await res.text();
-      if (!res.ok) throw new Error(`API ${res.status}: ${text.slice(0, 250)}`);
-
-      try { return JSON.parse(text); }
-      catch { throw new Error(`Response bukan JSON: ${text.slice(0, 250)}`); }
-    }
-
-    async function sendChat(message) {
-      setHint("");
-      addMsg(message, "user");
-      setBusy(true);
-      addTyping();
-
-      try {
-        const data = await postJson(API_BASE + "/api/chat", { message });
-        removeTyping();
-
-        const meta = [
-          data.lang ? `lang=${data.lang}` : null,
-          data.intent ? `intent=${data.intent}` : null,
-          data.risk_level ? `risk=${data.risk_level}` : null,
-          (typeof data.risk_score === "number") ? `score=${data.risk_score}` : null,
-        ].filter(Boolean).join(" | ");
-
-        await typeBotMessage(
-          data.reply?.message || "(tiada jawapan)",
-          meta,
-          // Optional: High risk slower typing
-          (data.risk_level === "HIGH") ? 950 : 700
-        );
-
-        if (data.slots && data.slots.number_last4) {
-          setHint(`Saya kesan nombor berakhir dengan ****${data.slots.number_last4}. Anda juga boleh guna Quick Check untuk semakan langkah rasmi.`);
-        } else {
-          setHint("");
-        }
-      } catch (e) {
-        removeTyping();
-        addMsg(`Ralat: ${e.message || e}`, "bot");
-        setHint("Semak API_BASE, CORS, dan pastikan endpoint /api/chat wujud.");
-      } finally {
-        setBusy(false);
-        msgInput.focus();
-      }
-    }
-
-    async function quickCheckNumber() {
-      setHint("");
-      const value = msgInput.value.trim();
-      if (!value) return alert("Sila masukkan nombor telefon atau akaun bank.");
-
-      addMsg("Semakan nombor: " + value, "user");
-      setBusy(true);
-      addTyping();
-
-      try {
-        const data = await postJson(API_BASE + "/api/check", { value, lang: "BM" });
-        removeTyping();
-
-        if (!data.ok) return addMsg("Semakan gagal. Sila cuba lagi.", "bot");
-
-        const reply =
-          `🔎 Keputusan Semakan Rasmi\n` +
-          `Jenis: ${data.number_type}\n` +
-          `Nombor: ${data.masked}\n\n` +
-          `Portal: ${data.official_check?.name || "-"}\n` +
-          `${data.official_check?.url || "-"}\n\n` +
-          `Langkah:\n- ${(data.official_check?.steps || []).join("\n- ")}\n\n` +
-          `Nota: Semakan rasmi perlu dibuat di portal (bot tidak mengesahkan muktamad).`;
-
-        await typeBotMessage(reply, "", 550);
-        msgInput.value = "";
-      } catch (e) {
-        removeTyping();
-        addMsg(`Ralat semakan: ${e.message || e}`, "bot");
-        setHint("Jika ini berlaku, semak log Worker (wrangler tail) dan CORS.");
-      } finally {
-        setBusy(false);
-        msgInput.focus();
-      }
-    }
-
-    // Buttons
-    sendBtn.addEventListener("click", () => {
-      const text = msgInput.value.trim();
-      if (!text) return;
-      msgInput.value = "";
-      sendChat(text);
-    });
-
-    msgInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") sendBtn.click();
-    });
-
-    quickBtn.addEventListener("click", quickCheckNumber);
-
-    clearBtn.addEventListener("click", () => {
-      chatEl.innerHTML = "";
-      setHint("");
-      addMsg("Chat dibersihkan. Anda boleh mula semula.", "bot");
-      msgInput.focus();
-    });
-
-    document.querySelectorAll("[data-fill]").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        msgInput.value = btn.getAttribute("data-fill") || "";
-        msgInput.focus();
-      });
-    });
-
-    // init
-    healthCheck();
-    addMsg(
-      "Hai! Saya CCID ScamBOT. Taip situasi anda atau nombor untuk semakan (contoh: Tolong semak 012-3456789).",
-      "bot"
-    );
-  </script>
-</body>
-</html>
+          <h2>Chat</h2
