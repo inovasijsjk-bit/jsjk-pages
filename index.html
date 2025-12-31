@@ -25,6 +25,8 @@
     code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; }
     .pill { display: inline-block; padding: 4px 8px; border: 1px solid rgba(127,127,127,.35); border-radius: 999px; font-size: 12px; opacity: .85; }
     .hint { margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1px dashed rgba(127,127,127,.45); opacity: .9; }
+    .quick { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
+    .qbtn { padding: 8px 10px; border-radius: 999px; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -44,20 +46,33 @@
           <button id="send">Send</button>
           <button id="quickCheck" title="Semak nombor/akaun secara terus">Quick Check</button>
         </div>
+
+        <!-- Quick actions untuk pengguna awam (lebih mesra panik/urgent) -->
+        <div class="quick" aria-label="Quick actions">
+          <button class="qbtn" data-fill="Dia minta OTP/TAC sekarang. Apa perlu saya buat?">🚨 Saya sedang dihubungi</button>
+          <button class="qbtn" data-fill="Saya dah buat bayaran/transfer. Apa langkah seterusnya?">💸 Saya dah transfer</button>
+          <button class="qbtn" data-fill="Tolong terangkan tanda-tanda Phone Scam.">📞 Phone Scam</button>
+          <button class="qbtn" data-fill="Tolong terangkan tanda-tanda Tipu Pelaburan.">📈 Pelaburan</button>
+          <button class="qbtn" data-fill="Tolong terangkan tanda-tanda Phishing.">🔗 Phishing</button>
+          <button class="qbtn" data-fill="Macam mana nak buat laporan rasmi?">🧾 Cara laporan</button>
+        </div>
+
         <div class="hint" id="hint" style="display:none;"></div>
         <div class="small" style="margin-top:8px;">
-          Tip: tekan <b>Enter</b> untuk hantar. Jika deploy sekali dengan Worker, UI akan auto guna domain yang sama (tiada isu API_BASE).
+          Tip: tekan <b>Enter</b> untuk hantar.
         </div>
       </div>
     </div>
   </div>
-const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
-  <script>
-  // ✅ API Worker (WAJIB di atas sekali)
-  const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
 
-    // ✅ Paling selamat: guna domain semasa + endpoint relatif
-    // Jika UI anda served dari Worker (assets), fetch("/api/chat") akan terus kena Worker yang sama.
+  <script>
+    // =========================
+    // API BASE
+    // =========================
+    // Anda boleh kekalkan URL Worker anda di sini.
+    // Jika suatu hari UI di-serve dari domain Worker yang sama, anda boleh guna relatif: const API_BASE = window.location.origin;
+    const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
+
     const ORIGIN = window.location.origin;
     document.getElementById("origin").textContent = ORIGIN;
 
@@ -102,41 +117,31 @@ const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
 
     async function healthCheck() {
       try {
-       const res = await fetch(API_BASE + "/", { method: "GET" });
+        const res = await fetch(API_BASE + "/", { method: "GET" });
         const txt = await res.text();
         let data = null;
         try { data = JSON.parse(txt); } catch {}
 
-        if (res.ok && data && data.ok) {
-          statusEl.textContent = "OK ✅";
-        } else if (res.ok) {
-          statusEl.textContent = "Reachable ✅";
-        } else {
-          statusEl.textContent = `Err ${res.status} ❌`;
-        }
+        if (res.ok && data && data.ok) statusEl.textContent = "OK ✅";
+        else if (res.ok) statusEl.textContent = "Reachable ✅";
+        else statusEl.textContent = `Err ${res.status} ❌`;
       } catch (e) {
         statusEl.textContent = "Failed ❌";
       }
     }
 
-    // Debug-friendly: nampak status & response kalau ada masalah
-    async function postJson(path, payload) {
-      const res = await fetch(path, {
+    async function postJson(url, payload) {
+      const res = await fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
 
       const text = await res.text();
-      if (!res.ok) {
-        throw new Error(`API ${res.status}: ${text.slice(0, 200)}`);
-      }
+      if (!res.ok) throw new Error(`API ${res.status}: ${text.slice(0, 250)}`);
 
-      try {
-        return JSON.parse(text);
-      } catch {
-        throw new Error(`Response bukan JSON: ${text.slice(0, 200)}`);
-      }
+      try { return JSON.parse(text); }
+      catch { throw new Error(`Response bukan JSON: ${text.slice(0, 250)}`); }
     }
 
     async function sendChat(message) {
@@ -151,6 +156,7 @@ const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
           data.lang ? `lang=${data.lang}` : null,
           data.intent ? `intent=${data.intent}` : null,
           data.risk_level ? `risk=${data.risk_level}` : null,
+          (typeof data.risk_score === "number") ? `score=${data.risk_score}` : null,
         ].filter(Boolean).join(" | ");
 
         addMsg(data.reply?.message || "(tiada jawapan)", "bot", meta);
@@ -162,7 +168,7 @@ const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
         }
       } catch (e) {
         addMsg(`Ralat: ${e.message || e}`, "bot");
-        setHint("Semak sama ada UI ini dibuka dari domain Worker yang betul, dan endpoint /api/chat wujud.");
+        setHint("Semak domain API_BASE, CORS, dan pastikan endpoint /api/chat wujud.");
       } finally {
         setBusy(false);
         msgInput.focus();
@@ -195,20 +201,21 @@ const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
           `Nombor: ${data.masked}\n\n` +
           `Portal: ${data.official_check?.name || "-"}\n` +
           `${data.official_check?.url || "-"}\n\n` +
-          `Langkah:\n- ${(data.official_check?.steps || []).join("\n- ")}`;
+          `Langkah:\n- ${(data.official_check?.steps || []).join("\n- ")}\n\n` +
+          `Nota: Semakan rasmi perlu dibuat di portal (bot tidak mengesahkan muktamad).`;
 
         addMsg(reply, "bot");
         msgInput.value = "";
       } catch (e) {
         addMsg(`Ralat semakan: ${e.message || e}`, "bot");
-        setHint("Jika ini berlaku, cuba buka /api/check secara terus atau semak log Worker (wrangler tail).");
+        setHint("Jika ini berlaku, semak log Worker (wrangler tail) dan rate limit.");
       } finally {
         setBusy(false);
         msgInput.focus();
       }
     }
 
-    // Event listeners (selamat sebab script diletak selepas element wujud)
+    // Event listeners
     sendBtn.addEventListener("click", () => {
       const text = msgInput.value.trim();
       if (!text) return;
@@ -221,6 +228,15 @@ const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
     });
 
     quickBtn.addEventListener("click", quickCheckNumber);
+
+    // Quick action buttons
+    document.querySelectorAll("[data-fill]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const fill = btn.getAttribute("data-fill") || "";
+        msgInput.value = fill;
+        msgInput.focus();
+      });
+    });
 
     // init
     healthCheck();
