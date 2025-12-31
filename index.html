@@ -2,30 +2,68 @@
 <html lang="ms">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CCID ScamBOT</title>
+  <style>
+    :root { color-scheme: light dark; }
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 0; }
+    .wrap { max-width: 900px; margin: 0 auto; padding: 18px; }
+    .card { border: 1px solid rgba(127,127,127,.25); border-radius: 14px; padding: 14px; }
+    h1 { margin: 0 0 6px; font-size: 20px; }
+    .sub { opacity: .75; margin: 0 0 12px; font-size: 13px; }
+    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    #chat { height: 55vh; overflow: auto; border: 1px solid rgba(127,127,127,.25); border-radius: 12px; padding: 12px; background: rgba(127,127,127,.06); }
+    .msg { max-width: 85%; padding: 10px 12px; border-radius: 12px; margin: 8px 0; white-space: pre-wrap; word-break: break-word; }
+    .user { margin-left: auto; background: rgba(0, 128, 255, .18); border: 1px solid rgba(0, 128, 255, .25); }
+    .bot { margin-right: auto; background: rgba(0, 200, 120, .15); border: 1px solid rgba(0, 200, 120, .22); }
+    .meta { margin-top: 6px; font-size: 12px; opacity: .7; }
+    .controls { margin-top: 12px; }
+    input[type="text"] { flex: 1; min-width: 240px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(127,127,127,.35); }
+    button { padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(127,127,127,.35); cursor: pointer; }
+    button:disabled { opacity: .6; cursor: not-allowed; }
+    .small { font-size: 12px; opacity: .75; }
+    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; }
+    .pill { display: inline-block; padding: 4px 8px; border: 1px solid rgba(127,127,127,.35); border-radius: 999px; font-size: 12px; opacity: .85; }
+    .hint { margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1px dashed rgba(127,127,127,.45); opacity: .9; }
+  </style>
 </head>
 <body>
+  <div class="wrap">
+    <div class="card">
+      <h1>CCID ScamBOT</h1>
+      <p class="sub">
+        Status API: <span id="status" class="pill">-</span>
+        &nbsp;•&nbsp; Origin: <code id="origin">-</code>
+      </p>
 
-  <!-- ... UI anda (chat, input, button) ... -->
-  <div id="chat"></div>
+      <div id="chat" aria-live="polite"></div>
 
-  <input id="msg" placeholder="Taip mesej..." />
-  <button id="send">Send</button>
-  <button id="quickCheck">Quick Check</button>
+      <div class="controls">
+        <div class="row">
+          <input id="msg" type="text" placeholder="Taip mesej... (contoh: Tolong semak 012-3456789)" autocomplete="off" />
+          <button id="send">Send</button>
+          <button id="quickCheck" title="Semak nombor/akaun secara terus">Quick Check</button>
+        </div>
+        <div class="hint" id="hint" style="display:none;"></div>
+        <div class="small" style="margin-top:8px;">
+          Tip: tekan <b>Enter</b> untuk hantar. Jika deploy sekali dengan Worker, UI akan auto guna domain yang sama (tiada isu API_BASE).
+        </div>
+      </div>
+    </div>
+  </div>
 
-  <div>Status: <span id="status">-</span></div>
-  <div>API: <span id="apibase"></span></div>
-  <div id="hint"></div>
-
-  <!-- ✅ Pastikan semua JS dalam satu <script> ini -->
   <script>
-    const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
-    document.getElementById("apibase").textContent = API_BASE;
+    // ✅ Paling selamat: guna domain semasa + endpoint relatif
+    // Jika UI anda served dari Worker (assets), fetch("/api/chat") akan terus kena Worker yang sama.
+    const ORIGIN = window.location.origin;
+    document.getElementById("origin").textContent = ORIGIN;
 
     const chatEl = document.getElementById("chat");
     const statusEl = document.getElementById("status");
     const hintEl = document.getElementById("hint");
+    const sendBtn = document.getElementById("send");
+    const quickBtn = document.getElementById("quickCheck");
+    const msgInput = document.getElementById("msg");
 
     function addMsg(text, who, meta = "") {
       const wrap = document.createElement("div");
@@ -38,50 +76,155 @@
         m.textContent = meta;
         wrap.appendChild(m);
       }
+
       chatEl.appendChild(wrap);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function setHint(text) {
+      if (!text) {
+        hintEl.style.display = "none";
+        hintEl.textContent = "";
+        return;
+      }
+      hintEl.style.display = "block";
+      hintEl.textContent = text;
+    }
+
+    function setBusy(isBusy) {
+      sendBtn.disabled = isBusy;
+      quickBtn.disabled = isBusy;
+      msgInput.disabled = isBusy;
     }
 
     async function healthCheck() {
       try {
-        const res = await fetch(API_BASE + "/");
-        const data = await res.json();
-        statusEl.textContent = data.ok ? "OK ✅" : "Not OK ❌";
+        const res = await fetch("/", { method: "GET" });
+        const txt = await res.text();
+        let data = null;
+        try { data = JSON.parse(txt); } catch {}
+
+        if (res.ok && data && data.ok) {
+          statusEl.textContent = "OK ✅";
+        } else if (res.ok) {
+          statusEl.textContent = "Reachable ✅";
+        } else {
+          statusEl.textContent = `Err ${res.status} ❌`;
+        }
       } catch (e) {
         statusEl.textContent = "Failed ❌";
       }
     }
 
-    async function sendChat(message) {
-      addMsg(message, "user");
+    // Debug-friendly: nampak status & response kalau ada masalah
+    async function postJson(path, payload) {
+      const res = await fetch(path, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text();
+      if (!res.ok) {
+        throw new Error(`API ${res.status}: ${text.slice(0, 200)}`);
+      }
+
       try {
-        const res = await fetch(API_BASE + "/api/chat", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message }),
-        });
-        const data = await res.json();
-        addMsg(data.reply?.message || "(tiada jawapan)", "bot");
-      } catch (e) {
-        addMsg("Ralat: gagal sambung API.", "bot");
+        return JSON.parse(text);
+      } catch {
+        throw new Error(`Response bukan JSON: ${text.slice(0, 200)}`);
       }
     }
 
-    document.getElementById("send").addEventListener("click", () => {
-      const input = document.getElementById("msg");
-      const text = input.value.trim();
+    async function sendChat(message) {
+      setHint("");
+      addMsg(message, "user");
+      setBusy(true);
+
+      try {
+        const data = await postJson("/api/chat", { message });
+
+        const meta = [
+          data.lang ? `lang=${data.lang}` : null,
+          data.intent ? `intent=${data.intent}` : null,
+          data.risk_level ? `risk=${data.risk_level}` : null,
+        ].filter(Boolean).join(" | ");
+
+        addMsg(data.reply?.message || "(tiada jawapan)", "bot", meta);
+
+        if (data.slots && data.slots.number_last4) {
+          setHint(`Saya kesan nombor berakhir dengan ****${data.slots.number_last4}. Anda juga boleh guna Quick Check untuk semakan langkah rasmi.`);
+        } else {
+          setHint("");
+        }
+      } catch (e) {
+        addMsg(`Ralat: ${e.message || e}`, "bot");
+        setHint("Semak sama ada UI ini dibuka dari domain Worker yang betul, dan endpoint /api/chat wujud.");
+      } finally {
+        setBusy(false);
+        msgInput.focus();
+      }
+    }
+
+    async function quickCheckNumber() {
+      setHint("");
+      const value = msgInput.value.trim();
+
+      if (!value) {
+        alert("Sila masukkan nombor telefon atau akaun bank.");
+        return;
+      }
+
+      addMsg("Semakan nombor: " + value, "user");
+      setBusy(true);
+
+      try {
+        const data = await postJson("/api/check", { value, lang: "BM" });
+
+        if (!data.ok) {
+          addMsg("Semakan gagal. Sila cuba lagi.", "bot");
+          return;
+        }
+
+        const reply =
+          `🔎 Keputusan Semakan Rasmi\n` +
+          `Jenis: ${data.number_type}\n` +
+          `Nombor: ${data.masked}\n\n` +
+          `Portal: ${data.official_check?.name || "-"}\n` +
+          `${data.official_check?.url || "-"}\n\n` +
+          `Langkah:\n- ${(data.official_check?.steps || []).join("\n- ")}`;
+
+        addMsg(reply, "bot");
+        msgInput.value = "";
+      } catch (e) {
+        addMsg(`Ralat semakan: ${e.message || e}`, "bot");
+        setHint("Jika ini berlaku, cuba buka /api/check secara terus atau semak log Worker (wrangler tail).");
+      } finally {
+        setBusy(false);
+        msgInput.focus();
+      }
+    }
+
+    // Event listeners (selamat sebab script diletak selepas element wujud)
+    sendBtn.addEventListener("click", () => {
+      const text = msgInput.value.trim();
       if (!text) return;
-      input.value = "";
+      msgInput.value = "";
       sendChat(text);
     });
 
-    document.getElementById("msg").addEventListener("keydown", (e) => {
-      if (e.key === "Enter") document.getElementById("send").click();
+    msgInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendBtn.click();
     });
+
+    quickBtn.addEventListener("click", quickCheckNumber);
 
     // init
     healthCheck();
-    addMsg("Hai! Saya CCID ScamBOT. Taip situasi anda atau nombor untuk semakan (contoh: Tolong semak 012-3456789).", "bot");
+    addMsg(
+      "Hai! Saya CCID ScamBOT. Taip situasi anda atau nombor untuk semakan (contoh: Tolong semak 012-3456789).",
+      "bot"
+    );
   </script>
-
 </body>
 </html>
