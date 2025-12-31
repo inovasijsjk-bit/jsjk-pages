@@ -5,72 +5,317 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>CCID ScamBOT</title>
   <style>
-    :root { color-scheme: light dark; }
-    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; margin: 0; padding: 0; }
-    .wrap { max-width: 900px; margin: 0 auto; padding: 18px; }
-    .card { border: 1px solid rgba(127,127,127,.25); border-radius: 14px; padding: 14px; }
-    h1 { margin: 0 0 6px; font-size: 20px; }
-    .sub { opacity: .75; margin: 0 0 12px; font-size: 13px; }
-    .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-    #chat { height: 55vh; overflow: auto; border: 1px solid rgba(127,127,127,.25); border-radius: 12px; padding: 12px; background: rgba(127,127,127,.06); }
-    .msg { max-width: 85%; padding: 10px 12px; border-radius: 12px; margin: 8px 0; white-space: pre-wrap; word-break: break-word; }
-    .user { margin-left: auto; background: rgba(0, 128, 255, .18); border: 1px solid rgba(0, 128, 255, .25); }
-    .bot { margin-right: auto; background: rgba(0, 200, 120, .15); border: 1px solid rgba(0, 200, 120, .22); }
-    .meta { margin-top: 6px; font-size: 12px; opacity: .7; }
-    .controls { margin-top: 12px; }
-    input[type="text"] { flex: 1; min-width: 240px; padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(127,127,127,.35); }
-    button { padding: 10px 12px; border-radius: 12px; border: 1px solid rgba(127,127,127,.35); cursor: pointer; }
-    button:disabled { opacity: .6; cursor: not-allowed; }
-    .small { font-size: 12px; opacity: .75; }
-    code { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; font-size: 12px; }
-    .pill { display: inline-block; padding: 4px 8px; border: 1px solid rgba(127,127,127,.35); border-radius: 999px; font-size: 12px; opacity: .85; }
-    .hint { margin-top: 10px; padding: 10px 12px; border-radius: 12px; border: 1px dashed rgba(127,127,127,.45); opacity: .9; }
-    .quick { display:flex; gap:8px; flex-wrap:wrap; margin-top:10px; }
-    .qbtn { padding: 8px 10px; border-radius: 999px; font-size: 12px; }
+    :root{
+      --bg: #0b1220;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.08);
+      --stroke: rgba(255,255,255,.14);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --accent: #3b82f6;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --shadow: 0 18px 50px rgba(0,0,0,.45);
+      --radius: 18px;
+      --radius2: 14px;
+      color-scheme: dark;
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 600px at 20% 0%, rgba(59,130,246,.25), transparent 55%),
+                  radial-gradient(1200px 600px at 100% 20%, rgba(34,197,94,.18), transparent 55%),
+                  var(--bg);
+      color: var(--text);
+    }
+    a{ color: #93c5fd; }
+    .container{
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 18px;
+    }
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1px solid var(--stroke);
+      border-radius: var(--radius);
+      background: linear-gradient(90deg, rgba(59,130,246,.22), rgba(34,197,94,.10));
+      box-shadow: var(--shadow);
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px;
+    }
+    .logo{
+      width:42px; height:42px; border-radius:14px;
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.25), rgba(255,255,255,.06));
+      border:1px solid var(--stroke);
+      display:grid; place-items:center;
+      font-weight:800;
+      letter-spacing:.5px;
+    }
+    .title{
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .title h1{ margin:0; font-size:16px; }
+    .title .sub{ margin:0; font-size:12px; color: var(--muted); }
+    .statusRow{
+      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+      justify-content:flex-end;
+      font-size:12px;
+      color: var(--muted);
+    }
+    .pill{
+      display:inline-flex; align-items:center; gap:6px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      padding: 6px 10px;
+      border-radius: 999px;
+      color: var(--text);
+    }
+    .dot{ width:8px; height:8px; border-radius:999px; background: rgba(255,255,255,.35); }
+    .dot.ok{ background: var(--ok); }
+    .dot.bad{ background: var(--danger); }
+    .layout{
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+    @media (max-width: 900px){
+      .layout{ grid-template-columns: 1fr; }
+    }
+    .panel{
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.05);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .panelHeader{
+      padding: 12px 14px;
+      background: rgba(255,255,255,.06);
+      border-bottom: 1px solid var(--stroke);
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+    }
+    .panelHeader h2{
+      margin:0;
+      font-size:13px;
+      color: var(--text);
+      letter-spacing:.2px;
+    }
+    .panelBody{ padding: 12px 14px; }
+    .small{ font-size:12px; color: var(--muted); line-height:1.35; }
+
+    .quickGrid{ display:grid; gap:10px; margin-top:10px; }
+    .qbtn{
+      width:100%;
+      text-align:left;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border:1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      cursor:pointer;
+      transition: transform .08s ease, background .12s ease, border-color .12s ease;
+    }
+    .qbtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.08); border-color: rgba(147,197,253,.35); }
+    .qbtn .t{ font-size:13px; font-weight:650; display:flex; align-items:center; gap:8px; }
+    .qbtn .d{ font-size:12px; color: var(--muted); margin-top:4px; }
+
+    .chatWrap{
+      display:flex; flex-direction:column; height: 74vh;
+      min-height: 560px;
+    }
+    @media (max-width: 900px){
+      .chatWrap{ height: 70vh; min-height: 520px; }
+    }
+    #chat{
+      flex: 1;
+      overflow:auto;
+      padding: 14px;
+      background:
+        radial-gradient(700px 300px at 20% 10%, rgba(59,130,246,.12), transparent 60%),
+        radial-gradient(700px 300px at 90% 10%, rgba(34,197,94,.08), transparent 60%),
+        rgba(255,255,255,.03);
+    }
+    .msg{
+      max-width: 86%;
+      padding: 10px 12px;
+      border-radius: 16px;
+      margin: 10px 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid rgba(255,255,255,.10);
+      box-shadow: 0 8px 18px rgba(0,0,0,.22);
+    }
+    .user{
+      margin-left:auto;
+      background: rgba(59,130,246,.18);
+      border-color: rgba(59,130,246,.22);
+    }
+    .bot{
+      margin-right:auto;
+      background: rgba(34,197,94,.10);
+      border-color: rgba(34,197,94,.18);
+    }
+    .meta{
+      margin-top: 8px;
+      font-size: 11px;
+      color: var(--muted);
+      opacity: .95;
+    }
+
+    .composer{
+      padding: 12px 14px;
+      border-top: 1px solid var(--stroke);
+      background: rgba(255,255,255,.06);
+      display:flex; gap:10px; align-items:center;
+    }
+    input[type="text"]{
+      flex:1;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      outline: none;
+    }
+    input[type="text"]::placeholder{ color: rgba(255,255,255,.55); }
+    .btn{
+      padding: 12px 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.16);
+      background: rgba(255,255,255,.08);
+      color: var(--text);
+      cursor:pointer;
+      transition: transform .08s ease, background .12s ease;
+      display:inline-flex; align-items:center; gap:8px;
+      white-space:nowrap;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); }
+    .btn.primary{
+      background: rgba(59,130,246,.22);
+      border-color: rgba(59,130,246,.28);
+    }
+    .btn.danger{
+      background: rgba(239,68,68,.16);
+      border-color: rgba(239,68,68,.22);
+    }
+    .btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
+
+    .hint{
+      display:none;
+      margin: 12px 14px 0;
+      padding: 10px 12px;
+      border-radius: 14px;
+      border: 1px dashed rgba(255,255,255,.22);
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .typing{
+      display:inline-flex; gap:4px; align-items:center;
+    }
+    .typing span{
+      width:6px; height:6px; border-radius:999px;
+      background: rgba(255,255,255,.45);
+      animation: bounce 1.05s infinite ease-in-out;
+    }
+    .typing span:nth-child(2){ animation-delay: .15s; }
+    .typing span:nth-child(3){ animation-delay: .30s; }
+    @keyframes bounce{
+      0%,80%,100%{ transform: translateY(0); opacity:.55; }
+      40%{ transform: translateY(-4px); opacity:1; }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>CCID ScamBOT</h1>
-      <p class="sub">
-        Status API: <span id="status" class="pill">-</span>
-        &nbsp;•&nbsp; Origin: <code id="origin">-</code>
-      </p>
+  <div class="container">
 
-      <div id="chat" aria-live="polite"></div>
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo">CCID</div>
+        <div class="title">
+          <h1>CCID ScamBOT</h1>
+          <p class="sub">Pembantu rujukan awam anti-scam • Maklumat pendidikan • Semakan melalui portal rasmi</p>
+        </div>
+      </div>
+      <div class="statusRow">
+        <span class="pill"><span id="dot" class="dot"></span><span id="status">Checking…</span></span>
+        <span class="pill">Origin: <code id="origin">-</code></span>
+      </div>
+    </div>
 
-      <div class="controls">
-        <div class="row">
-          <input id="msg" type="text" placeholder="Taip mesej... (contoh: Tolong semak 012-3456789)" autocomplete="off" />
-          <button id="send">Send</button>
-          <button id="quickCheck" title="Semak nombor/akaun secara terus">Quick Check</button>
+    <div class="layout">
+      <!-- LEFT: Quick actions -->
+      <div class="panel">
+        <div class="panelHeader">
+          <h2>Quick Actions</h2>
+          <button id="clear" class="btn danger" title="Padam chat">🧹 Clear</button>
+        </div>
+        <div class="panelBody">
+          <div class="small">
+            Pilih situasi anda untuk auto-isi mesej. Anda juga boleh terus taip.
+          </div>
+
+          <div class="quickGrid">
+            <button class="qbtn" data-fill="Dia minta OTP/TAC sekarang. Apa perlu saya buat?">
+              <div class="t">🚨 Saya sedang dihubungi</div>
+              <div class="d">Arahan segera (hentikan komunikasi, jangan kongsi OTP).</div>
+            </button>
+            <button class="qbtn" data-fill="Saya dah transfer/bayar. Apa langkah seterusnya?">
+              <div class="t">💸 Saya dah transfer/bayar</div>
+              <div class="d">Langkah selepas kejadian + simpan bukti.</div>
+            </button>
+            <button class="qbtn" data-fill="Tolong semak nombor ini 012-3456789">
+              <div class="t">🔎 Semak nombor</div>
+              <div class="d">Bot akan pandu ke Semak Mule (rasmi).</div>
+            </button>
+            <button class="qbtn" data-fill="Tolong terangkan tanda-tanda Phone Scam.">
+              <div class="t">📞 Phone Scam</div>
+              <div class="d">Penyamaran pihak berkuasa / ugutan / pindahan wang.</div>
+            </button>
+            <button class="qbtn" data-fill="Tolong terangkan tanda-tanda Tipu Pelaburan.">
+              <div class="t">📈 Tipu Pelaburan</div>
+              <div class="d">Pulangan tinggi/terjamin, patuh syariah tanpa bukti.</div>
+            </button>
+            <button class="qbtn" data-fill="Macam mana nak buat laporan rasmi?">
+              <div class="t">🧾 Cara laporan</div>
+              <div class="d">Susunan langkah tindakan & saluran rasmi.</div>
+            </button>
+          </div>
+
+          <div class="hint" id="hint"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Chat -->
+      <div class="panel chatWrap">
+        <div class="panelHeader">
+          <h2>Chat</h2>
+          <div class="small">Enter untuk hantar • Quick Check untuk semakan rasmi</div>
         </div>
 
-        <!-- Quick actions untuk pengguna awam (lebih mesra panik/urgent) -->
-        <div class="quick" aria-label="Quick actions">
-          <button class="qbtn" data-fill="Dia minta OTP/TAC sekarang. Apa perlu saya buat?">🚨 Saya sedang dihubungi</button>
-          <button class="qbtn" data-fill="Saya dah buat bayaran/transfer. Apa langkah seterusnya?">💸 Saya dah transfer</button>
-          <button class="qbtn" data-fill="Tolong terangkan tanda-tanda Phone Scam.">📞 Phone Scam</button>
-          <button class="qbtn" data-fill="Tolong terangkan tanda-tanda Tipu Pelaburan.">📈 Pelaburan</button>
-          <button class="qbtn" data-fill="Tolong terangkan tanda-tanda Phishing.">🔗 Phishing</button>
-          <button class="qbtn" data-fill="Macam mana nak buat laporan rasmi?">🧾 Cara laporan</button>
-        </div>
+        <div id="chat" aria-live="polite"></div>
 
-        <div class="hint" id="hint" style="display:none;"></div>
-        <div class="small" style="margin-top:8px;">
-          Tip: tekan <b>Enter</b> untuk hantar.
+        <div class="composer">
+          <input id="msg" type="text" placeholder="Taip mesej… (contoh: Tolong semak 012-3456789)" autocomplete="off" />
+          <button id="quickCheck" class="btn" title="Semak nombor/akaun secara terus">✅ Quick Check</button>
+          <button id="send" class="btn primary">➡️ Send</button>
         </div>
       </div>
     </div>
   </div>
 
   <script>
-    // =========================
-    // API BASE
-    // =========================
-    // Anda boleh kekalkan URL Worker anda di sini.
-    // Jika suatu hari UI di-serve dari domain Worker yang sama, anda boleh guna relatif: const API_BASE = window.location.origin;
+    // Tukar ini jika URL Worker anda berbeza
     const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
 
     const ORIGIN = window.location.origin;
@@ -78,15 +323,51 @@
 
     const chatEl = document.getElementById("chat");
     const statusEl = document.getElementById("status");
+    const dotEl = document.getElementById("dot");
     const hintEl = document.getElementById("hint");
     const sendBtn = document.getElementById("send");
     const quickBtn = document.getElementById("quickCheck");
+    const clearBtn = document.getElementById("clear");
     const msgInput = document.getElementById("msg");
+
+    function setHint(text) {
+      if (!text) {
+        hintEl.style.display = "none";
+        hintEl.textContent = "";
+        return;
+      }
+      hintEl.style.display = "block";
+      hintEl.textContent = text;
+    }
+
+    function linkify(text){
+      // simple URL linkify
+      return text.replace(/https?:\/\/[^\s]+/g, (url) => url);
+    }
 
     function addMsg(text, who, meta = "") {
       const wrap = document.createElement("div");
       wrap.className = "msg " + who;
-      wrap.textContent = text;
+
+      // Keep text safe + clickable URLs
+      const safe = document.createElement("div");
+      const t = linkify(String(text || ""));
+      // Render URLs as clickable without innerHTML injection:
+      // Split by spaces and create <a> for URL tokens
+      const parts = t.split(/(\s+)/);
+      parts.forEach(p => {
+        if (/^https?:\/\/[^\s]+$/.test(p)) {
+          const a = document.createElement("a");
+          a.href = p;
+          a.target = "_blank";
+          a.rel = "noreferrer";
+          a.textContent = p;
+          safe.appendChild(a);
+        } else {
+          safe.appendChild(document.createTextNode(p));
+        }
+      });
+      wrap.appendChild(safe);
 
       if (meta) {
         const m = document.createElement("div");
@@ -99,20 +380,28 @@
       chatEl.scrollTop = chatEl.scrollHeight;
     }
 
-    function setHint(text) {
-      if (!text) {
-        hintEl.style.display = "none";
-        hintEl.textContent = "";
-        return;
-      }
-      hintEl.style.display = "block";
-      hintEl.textContent = text;
+    function addTyping(){
+      const wrap = document.createElement("div");
+      wrap.className = "msg bot";
+      wrap.id = "typing";
+      const t = document.createElement("div");
+      t.className = "typing";
+      t.innerHTML = "<span></span><span></span><span></span>";
+      wrap.appendChild(t);
+      chatEl.appendChild(wrap);
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function removeTyping(){
+      const el = document.getElementById("typing");
+      if (el) el.remove();
     }
 
     function setBusy(isBusy) {
       sendBtn.disabled = isBusy;
       quickBtn.disabled = isBusy;
       msgInput.disabled = isBusy;
+      clearBtn.disabled = isBusy;
     }
 
     async function healthCheck() {
@@ -122,11 +411,19 @@
         let data = null;
         try { data = JSON.parse(txt); } catch {}
 
-        if (res.ok && data && data.ok) statusEl.textContent = "OK ✅";
-        else if (res.ok) statusEl.textContent = "Reachable ✅";
-        else statusEl.textContent = `Err ${res.status} ❌`;
+        if (res.ok && data && data.ok) {
+          statusEl.textContent = "API OK";
+          dotEl.className = "dot ok";
+        } else if (res.ok) {
+          statusEl.textContent = "API Reachable";
+          dotEl.className = "dot ok";
+        } else {
+          statusEl.textContent = `API Error ${res.status}`;
+          dotEl.className = "dot bad";
+        }
       } catch (e) {
-        statusEl.textContent = "Failed ❌";
+        statusEl.textContent = "API Failed";
+        dotEl.className = "dot bad";
       }
     }
 
@@ -148,9 +445,11 @@
       setHint("");
       addMsg(message, "user");
       setBusy(true);
+      addTyping();
 
       try {
         const data = await postJson(API_BASE + "/api/chat", { message });
+        removeTyping();
 
         const meta = [
           data.lang ? `lang=${data.lang}` : null,
@@ -167,8 +466,9 @@
           setHint("");
         }
       } catch (e) {
+        removeTyping();
         addMsg(`Ralat: ${e.message || e}`, "bot");
-        setHint("Semak domain API_BASE, CORS, dan pastikan endpoint /api/chat wujud.");
+        setHint("Semak API_BASE, CORS, dan pastikan endpoint /api/chat wujud.");
       } finally {
         setBusy(false);
         msgInput.focus();
@@ -178,22 +478,17 @@
     async function quickCheckNumber() {
       setHint("");
       const value = msgInput.value.trim();
-
-      if (!value) {
-        alert("Sila masukkan nombor telefon atau akaun bank.");
-        return;
-      }
+      if (!value) return alert("Sila masukkan nombor telefon atau akaun bank.");
 
       addMsg("Semakan nombor: " + value, "user");
       setBusy(true);
+      addTyping();
 
       try {
         const data = await postJson(API_BASE + "/api/check", { value, lang: "BM" });
+        removeTyping();
 
-        if (!data.ok) {
-          addMsg("Semakan gagal. Sila cuba lagi.", "bot");
-          return;
-        }
+        if (!data.ok) return addMsg("Semakan gagal. Sila cuba lagi.", "bot");
 
         const reply =
           `🔎 Keputusan Semakan Rasmi\n` +
@@ -207,15 +502,16 @@
         addMsg(reply, "bot");
         msgInput.value = "";
       } catch (e) {
+        removeTyping();
         addMsg(`Ralat semakan: ${e.message || e}`, "bot");
-        setHint("Jika ini berlaku, semak log Worker (wrangler tail) dan rate limit.");
+        setHint("Jika ini berlaku, semak log Worker (wrangler tail) dan CORS.");
       } finally {
         setBusy(false);
         msgInput.focus();
       }
     }
 
-    // Event listeners
+    // Buttons
     sendBtn.addEventListener("click", () => {
       const text = msgInput.value.trim();
       if (!text) return;
@@ -229,11 +525,16 @@
 
     quickBtn.addEventListener("click", quickCheckNumber);
 
-    // Quick action buttons
+    clearBtn.addEventListener("click", () => {
+      chatEl.innerHTML = "";
+      setHint("");
+      addMsg("Chat dibersihkan. Anda boleh mula semula.", "bot");
+      msgInput.focus();
+    });
+
     document.querySelectorAll("[data-fill]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        const fill = btn.getAttribute("data-fill") || "";
-        msgInput.value = fill;
+        msgInput.value = btn.getAttribute("data-fill") || "";
         msgInput.focus();
       });
     });
