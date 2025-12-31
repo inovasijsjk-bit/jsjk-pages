@@ -89,7 +89,6 @@
     .panelBody{ padding:12px 14px; }
     .small{ font-size:12px; color:var(--muted); line-height:1.35; }
 
-    /* Sidebar actions */
     .quickGrid{ display:grid; gap:10px; margin-top:10px; }
     .qbtn{
       width:100%;
@@ -106,7 +105,6 @@
     .qbtn .t{ font-size:13px; font-weight:650; display:flex; align-items:center; gap:8px; }
     .qbtn .d{ font-size:12px; color:var(--muted); margin-top:4px; }
 
-    /* Chat */
     .chatWrap{ display:flex; flex-direction:column; height:74vh; min-height:560px; }
     #chat{
       flex:1;
@@ -195,7 +193,6 @@
       font-size:12px;
     }
 
-    /* Typing */
     .typingDots{ display:inline-flex; gap:4px; align-items:center; padding:2px 0; }
     .typingDots span{
       width:6px; height:6px; border-radius:999px;
@@ -217,7 +214,6 @@
     }
     @keyframes blink{ 50%{ opacity:0; } }
 
-    /* Inline choice chips inside chat */
     .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
     .chip{
       border:1px solid rgba(255,255,255,.16);
@@ -232,7 +228,6 @@
     }
     .chip:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); }
 
-    /* Mobile */
     @media (max-width: 900px){
       .layout{ display:flex; flex-direction:column; }
       .leftPanel{ order:2; }
@@ -253,7 +248,6 @@
       .panelBody{ padding:10px 12px; }
     }
 
-    /* Collapse quick actions on small */
     .collapseBtn{ display:none; width:100%; margin-top:10px; }
     @media (max-width: 600px){
       .collapseBtn{ display:inline-flex; }
@@ -269,7 +263,7 @@
         <div class="logo">CCID</div>
         <div class="title">
           <h1>CCID ScamBOT</h1>
-          <p class="sub">Pembantu rujukan awam anti-scam • Maklumat pendidikan • Semakan melalui portal rasmi</p>
+          <p class="sub">Chatbot rujukan anti-scam untuk orang awam (bukan pegawai sebenar) • Panduan & tindakan segera</p>
         </div>
       </div>
       <div class="statusRow">
@@ -279,33 +273,32 @@
     </div>
 
     <div class="layout">
-      <!-- Left -->
       <div class="panel leftPanel">
         <div class="panelHeader">
           <h2>Quick Actions</h2>
           <button id="clear" class="btn danger">🧹 Clear</button>
         </div>
         <div class="panelBody">
-          <div class="small">Pilih situasi untuk auto-isi mesej, atau guna menu dalam chat.</div>
+          <div class="small">Anda juga boleh guna menu dalam chat untuk pengalaman lebih “hidup”.</div>
 
           <button id="toggleQuick" class="btn collapseBtn">📌 Tunjuk / Sorok Quick Actions</button>
 
           <div class="quickGrid" id="quickGrid">
-            <button class="qbtn" data-fill="Saya nak buat semakan nombor telefon / akaun bank.">
-              <div class="t">🔎 Semakan No. Telefon / Akaun</div>
-              <div class="d">Panduan rasmi + link portal.</div>
+            <button class="qbtn" data-fill="1">
+              <div class="t">1) Semakan No. Telefon / Akaun Bank</div>
+              <div class="d">Panduan portal rasmi</div>
             </button>
-            <button class="qbtn" data-fill="Saya nak tanya modus operandi scam.">
-              <div class="t">🧠 Modus Operandi</div>
-              <div class="d">Pilih kategori scam untuk penerangan.</div>
+            <button class="qbtn" data-fill="2">
+              <div class="t">2) Modus Operandi Scam</div>
+              <div class="d">Pilih kategori scam</div>
             </button>
-            <button class="qbtn" data-fill="Saya perlukan tindakan jika kena scam.">
-              <div class="t">🚨 Tindakan Jika Kena Scam</div>
-              <div class="d">Sedang dihubungi / sudah bayar / akaun dibuka.</div>
+            <button class="qbtn" data-fill="3">
+              <div class="t">3) Tindakan Jika Kena Scam</div>
+              <div class="d">Sedang dihubungi / sudah bayar / hampir kena</div>
             </button>
-            <button class="qbtn" data-fill="Bagaimana cara buat laporan rasmi?">
-              <div class="t">🧾 Cara Melaporkan</div>
-              <div class="d">997 NSRC + prosedur laporan polis.</div>
+            <button class="qbtn" data-fill="4">
+              <div class="t">4) Cara Melaporkan</div>
+              <div class="d">997 (NSRC) + laporan polis</div>
             </button>
           </div>
 
@@ -313,11 +306,10 @@
         </div>
       </div>
 
-      <!-- Right -->
       <div class="panel chatWrap rightPanel">
         <div class="panelHeader">
           <h2>Chat</h2>
-          <div class="small">Enter untuk hantar • Anda boleh pilih menu dalam chat</div>
+          <div class="small">Enter untuk hantar • Pilih chip untuk menu</div>
         </div>
 
         <div id="chat" aria-live="polite"></div>
@@ -334,13 +326,10 @@
   <script>
     // ===== Config =====
     const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
-
-    // Tukar kepada URL rasmi yang anda mahu (Semak Mule / portal berkaitan)
     const SEMAK_MULE_URL = "https://semakmule.rmp.gov.my/";
 
-    // Anda boleh ubah 6 modus operandi di sini (label sahaja; penerangan sebenar still dari API jika anda mahu)
     const MODUS_OPTIONS = [
-      { key:"PHONE_SCAM", label:"Phone Scam (Penyamaran/UGUTAN)" },
+      { key:"PHONE_SCAM", label:"Phone Scam (Penyamaran / Ugutan)" },
       { key:"INVESTMENT", label:"Tipu Pelaburan" },
       { key:"LOVE_SCAM", label:"Love Scam" },
       { key:"ECOMMERCE", label:"E-Dagang / Parcel Scam" },
@@ -363,15 +352,18 @@
     const quickGrid = document.getElementById("quickGrid");
 
     // ===== State =====
-  // ===== State =====
-let typingToken = 0;
-let stage = "ASK_NAME";
-let userName = localStorage.getItem("ccid_name") || "";
-let lastModusLabel = "";   // simpan pilihan modus terakhir
-let inModusLoop = false;   // bila true, kita akan ulang pilihan modus + "Tiada"
-}
+    let typingToken = 0;
+    let stage = "ASK_NAME";
+    let userName = localStorage.getItem("ccid_name") || "";
+    let lastModusLabel = "";
+    let lastActionLabel = "";
 
-    // Scroll throttle
+    function setHint(text) {
+      if (!text) { hintEl.style.display="none"; hintEl.textContent=""; return; }
+      hintEl.style.display="block";
+      hintEl.textContent = text;
+    }
+
     let lastScrollAt = 0;
     function scrollBottomThrottled(force=false) {
       const now = performance.now();
@@ -434,7 +426,6 @@ let inModusLoop = false;   // bila true, kita akan ulang pilihan modus + "Tiada"
     }
 
     function addChipsToLastBot(chips) {
-      // find last bot message
       const msgs = Array.from(chatEl.querySelectorAll(".msg.bot"));
       const last = msgs[msgs.length - 1];
       if (!last) return;
@@ -465,7 +456,6 @@ let inModusLoop = false;   // bila true, kita akan ulang pilihan modus + "Tiada"
     async function typeBotMessageSmooth(fullText, meta, profile) {
       const token = ++typingToken;
 
-      // fast typing default
       const {
         cps = 52,
         batchMs = 22,
@@ -552,26 +542,25 @@ let inModusLoop = false;   // bila true, kita akan ulang pilihan modus + "Tiada"
       }
     }
 
-    // ===== Guided Flow =====
+    function normalizeName(input) {
+      const raw = String(input||"").trim();
+      if (!raw) return "";
+      const m = raw.match(/nama\s+saya\s+([a-zA-Z\u00C0-\u024F'\- ]{2,40})/i);
+      const name = (m ? m[1] : raw).trim();
+      return name.split(/\s+/).slice(0,3).join(" ");
+    }
+
     async function showGreetingAndAskName() {
       stage = "ASK_NAME";
+      lastModusLabel = "";
+      lastActionLabel = "";
       const greet =
 `Hai, Selamat Sejahtera!
-Saya CCID ChatBOT (JSJK) yang akan membantu anda.
+Saya CCID ChatBOT (rujukan anti-scam untuk orang awam).
 
 Boleh saya tahu nama anda?`;
       await typeBotMessageSmooth(greet, "");
       msgInput.placeholder = "Contoh: Ali / Nama saya Ali";
-    }
-
-    function normalizeName(input) {
-      const raw = String(input||"").trim();
-      if (!raw) return "";
-      // try to extract from "nama saya Ali"
-      const m = raw.match(/nama\s+saya\s+([a-zA-Z\u00C0-\u024F'\- ]{2,40})/i);
-      const name = (m ? m[1] : raw).trim();
-      // keep simple
-      return name.split(/\s+/).slice(0,3).join(" ");
     }
 
     async function showMainMenu() {
@@ -590,7 +579,27 @@ Pilih 1 daripada 4 menu berikut:`;
         { label:"4) Cara Melaporkan", onClick: () => handleMenuChoice("4") },
       ]);
 
-      msgInput.placeholder = "Atau taip 1, 2, 3, atau 4…";
+      msgInput.placeholder = "Taip 1, 2, 3, atau 4…";
+    }
+
+    async function endConversation() {
+      stage = "END";
+      await typeBotMessageSmooth(
+        `Terima Kasih. Kami harap ianya membantu.\n\nBe Smart, Stay Alert.`,
+        ""
+      );
+      msgInput.placeholder = "Perbualan tamat. Tekan Clear untuk mula semula.";
+    }
+
+    async function showMenuUtamaOrEndPrompt() {
+      await typeBotMessageSmooth(
+        `Adakah anda mahu kembali ke Menu Utama atau tamatkan perbualan?`,
+        ""
+      );
+      addChipsToLastBot([
+        { label:"Menu Utama", onClick: () => showMainMenu() },
+        { label:"Tiada", onClick: () => endConversation() }
+      ]);
     }
 
     async function handleMenuChoice(choice) {
@@ -599,42 +608,46 @@ Pilih 1 daripada 4 menu berikut:`;
       if (c === "1") {
         stage = "MENU_1";
         await typeBotMessageSmooth(
-`✅ *Semakan No. Telefon / No. Akaun Bank*
+`✅ Semakan No. Telefon / No. Akaun Bank
 
-1) Tekan pautan portal rasmi berikut:
+1) Buka portal rasmi:
 ${SEMAK_MULE_URL}
 
 2) Masukkan nombor telefon / nombor akaun bank.
-3) Semak keputusan dan simpan tangkapan skrin sebagai bukti (jika perlu).
+3) Semak keputusan dan simpan tangkapan skrin sebagai bukti.
 
-Jika anda mahu, anda boleh taip nombor di sini dan saya akan bantu “format/kenal pasti” nombor untuk anda.`,
+(Anda juga boleh taip nombor di sini dan tekan “Quick Check”.)`,
           ""
         );
+        await showMenuUtamaOrEndPrompt();
         return;
       }
 
       if (c === "2") {
         stage = "MENU_2_MODUS";
         await typeBotMessageSmooth(
-`✅ *Pertanyaan Berkaitan Modus Operandi Scam*
+`✅ Pertanyaan Berkaitan Modus Operandi Scam
 
 Modus operandi yang anda mahu tahu yang mana? (Pilih 1)`,
           ""
         );
 
-        addChipsToLastBot(MODUS_OPTIONS.map(opt => ({
-          label: opt.label,
-          onClick: () => handleModusChoice(opt)
-        })));
+        addChipsToLastBot([
+          ...MODUS_OPTIONS.map(opt => ({
+            label: opt.label,
+            onClick: () => handleModusChoice(opt)
+          })),
+          { label:"Tiada", onClick: () => endConversation() }
+        ]);
 
-        msgInput.placeholder = "Pilih satu modus… atau taip nama modus";
+        msgInput.placeholder = "Klik pilihan modus… atau taip 'Tiada' untuk tamat";
         return;
       }
 
       if (c === "3") {
         stage = "MENU_3_ACTION";
         await typeBotMessageSmooth(
-`✅ *Tindakan Yang Perlu Diambil Jika Kena Scam*
+`✅ Tindakan Yang Perlu Diambil Jika Kena Scam
 
 Situasi anda yang mana satu? (Pilih 1)`,
           ""
@@ -643,7 +656,9 @@ Situasi anda yang mana satu? (Pilih 1)`,
         addChipsToLastBot([
           { label:"A) Sedang menerima panggilan / chat sekarang", onClick: () => handleVictimAction("A") },
           { label:"B) Saya sudah buat bayaran / transfer", onClick: () => handleVictimAction("B") },
-          { label:"C) Saya cuma hampir kena (belum bayar)", onClick: () => handleVictimAction("C") },
+          { label:"C) Saya hampir kena (belum bayar)", onClick: () => handleVictimAction("C") },
+          { label:"Menu Utama", onClick: () => showMainMenu() },
+          { label:"Tiada", onClick: () => endConversation() },
         ]);
 
         msgInput.placeholder = "Pilih A/B/C…";
@@ -653,130 +668,74 @@ Situasi anda yang mana satu? (Pilih 1)`,
       if (c === "4") {
         stage = "MENU_4_REPORT";
         await typeBotMessageSmooth(
-`✅ *Cara Melaporkan (Tindakan Pantas)*
+`✅ Cara Melaporkan (Tindakan Pantas)
 
-1) Jika sedang berlaku penipuan / baru sahaja berlaku: hubungi *National Scam Response Center (NSRC)* di talian *997* (segera).
+1) Jika penipuan sedang berlaku / baru berlaku: hubungi National Scam Response Center (NSRC) di talian 997.
 2) Buat laporan polis di balai polis berhampiran.
 
-*Bukti yang perlu disimpan:*
+Bukti yang perlu disimpan:
 - resit/rekod transaksi (screenshot)
 - nombor akaun / nombor telefon / link / username scammer
 - chat/WhatsApp/Telegram dan rakaman panggilan (jika ada)
-- masa & tarikh kejadian
-
-*Prosedur ringkas laporan polis:*
-1) Susun kronologi (apa berlaku, bila, berapa jumlah kerugian).
-2) Sertakan semua bukti (screenshot/print).
-3) Nyatakan akaun penerima, bank, dan butiran komunikasi scammer.
-4) Simpan no. laporan (report number) untuk rujukan.
-
-Jika anda mahu, beritahu saya platform yang digunakan (WhatsApp/Telegram/FB/IG) dan status (sudah bayar / belum), saya susunkan “kronologi” ringkas untuk anda.`,
+- masa & tarikh kejadian`,
           ""
         );
-        msgInput.placeholder = "Contoh: Saya kena di WhatsApp, saya sudah transfer RM500...";
+        await showMenuUtamaOrEndPrompt();
         return;
       }
 
-      // fallback if unknown
       await typeBotMessageSmooth("Sila pilih 1, 2, 3 atau 4 ya.", "");
     }
 
-   async function handleModusChoice(opt) {
-  stage = "MENU_2_DETAIL";
-  inModusLoop = true;
-  lastModusLabel = opt.label;
+    async function handleModusChoice(opt) {
+      stage = "MENU_2_DETAIL";
+      lastModusLabel = opt.label;
 
-  // Hantar ke API untuk penerangan modus
-  addUserMsg(opt.label);
+      addUserMsg(opt.label);
 
-  setBusy(true);
-  addBotDots();
-  try{
-    const prompt =
-      `Terangkan modus operandi: ${opt.label}. ` +
-      `Senaraikan tanda-tanda (red flags), contoh situasi, dan langkah pencegahan. ` +
-      `Gunakan bahasa mudah difahami.`;
+      setBusy(true);
+      addBotDots();
+      try{
+        const prompt =
+          `Terangkan modus operandi: ${opt.label}. ` +
+          `Senaraikan tanda-tanda (red flags), contoh situasi, dan langkah pencegahan. ` +
+          `Guna bahasa mudah dan berstruktur.`;
 
-    const data = await postJson(API_BASE + "/api/chat", { message: prompt });
-    removeBotDots();
+        const data = await postJson(API_BASE + "/api/chat", { message: prompt });
+        removeBotDots();
 
-    const meta = [
-      data.lang ? `lang=${data.lang}` : null,
-      data.intent ? `intent=${data.intent}` : null,
-      data.risk_level ? `risk=${data.risk_level}` : null,
-      (typeof data.risk_score === "number") ? `score=${data.risk_score}` : null,
-    ].filter(Boolean).join(" | ");
+        const meta = [
+          data.lang ? `lang=${data.lang}` : null,
+          data.intent ? `intent=${data.intent}` : null,
+          data.risk_level ? `risk=${data.risk_level}` : null,
+          (typeof data.risk_score === "number") ? `score=${data.risk_score}` : null,
+        ].filter(Boolean).join(" | ");
 
-    await typeBotMessageSmooth(data.reply?.message || "(tiada jawapan)", meta);
+        await typeBotMessageSmooth(data.reply?.message || "(tiada jawapan)", meta);
 
-    // ✅ Follow-up khas modus (bukan balik ke menu 1/2/3/4)
-    stage = "MODUS_FOLLOWUP";
-    await typeBotMessageSmooth(
-      `Sekian maklumat berkenaan modus operandi (${lastModusLabel}).\n\n` +
-      `Adakah anda mahu bertanya berkenaan modus operandi lain?\n` +
-      `Sila pilih pilihan berikut:`,
-      ""
-    );
+        stage = "MODUS_FOLLOWUP";
+        await typeBotMessageSmooth(
+          `Sekian maklumat berkenaan modus operandi (${lastModusLabel}).\n\n` +
+          `Adakah anda mahu bertanya berkenaan modus operandi lain?\n` +
+          `Sila pilih pilihan berikut:`,
+          ""
+        );
 
-    // Chips modus semula + "Tiada"
-    addChipsToLastBot([
-      ...MODUS_OPTIONS.map(m => ({
-        label: m.label,
-        onClick: () => handleModusChoice(m)
-      })),
-      {
-        label: "Tiada",
-        onClick: () => endConversation()
-      }
-    ]);
+        addChipsToLastBot([
+          ...MODUS_OPTIONS.map(m => ({
+            label: m.label,
+            onClick: () => handleModusChoice(m)
+          })),
+          { label:"Menu Utama", onClick: () => showMainMenu() },
+          { label:"Tiada", onClick: () => endConversation() }
+        ]);
 
-  } catch(e){
-    removeBotDots();
-    await typeBotMessageSmooth(`Ralat: ${e.message||e}`, "");
-  } finally {
-    setBusy(false);
-    msgInput.focus();
-  }
-}
-
-async function endConversation() {
-  inModusLoop = false;
-  stage = "END";
-  await typeBotMessageSmooth(
-    `Terima Kasih. Kami harap ianya membantu.\n\n` +
-    `Be Smart, Stay Alert.`,
-    ""
-  );
-  msgInput.placeholder = "Perbualan tamat. Tekan Clear untuk mula semula.";
-}
-
-
-    async function handleVictimAction(code) {
-      stage = "MENU_3_DETAIL";
-
-      if (code === "A") {
-        // send to API to generate urgent instructions
-        addUserMsg("A) Sedang menerima panggilan / chat sekarang");
-        const prompt = "Saya sedang dihubungi sekarang dan mereka minta OTP/TAC. Beri tindakan segera langkah demi langkah.";
-        await sendToAPI(prompt);
-        stage = "MENU";
-        return;
-      }
-
-      if (code === "B") {
-        addUserMsg("B) Saya sudah buat bayaran / transfer");
-        const prompt = "Saya sudah buat bayaran/transfer kepada scammer. Beri langkah segera (hubungi bank, NSRC 997, simpan bukti, laporan polis) dan apa maklumat yang perlu saya sediakan.";
-        await sendToAPI(prompt);
-        stage = "MENU";
-        return;
-      }
-
-      if (code === "C") {
-        addUserMsg("C) Saya hampir kena (belum bayar)");
-        const prompt = "Saya hampir kena scam tetapi belum buat bayaran. Beri langkah pencegahan: block, report, semak nombor, dan red flags.";
-        await sendToAPI(prompt);
-        stage = "MENU";
-        return;
+      } catch(e){
+        removeBotDots();
+        await typeBotMessageSmooth(`Ralat: ${e.message||e}`, "");
+      } finally {
+        setBusy(false);
+        msgInput.focus();
       }
     }
 
@@ -795,7 +754,6 @@ async function endConversation() {
         ].filter(Boolean).join(" | ");
 
         await typeBotMessageSmooth(data.reply?.message || "(tiada jawapan)", meta);
-        await typeBotMessageSmooth("Jika mahu, pilih menu lain atau taip 1/2/3/4.", "");
       } catch(e){
         removeBotDots();
         await typeBotMessageSmooth(`Ralat: ${e.message||e}`, "");
@@ -805,81 +763,50 @@ async function endConversation() {
       }
     }
 
-    // ===== General send handler (free text) =====
-    async function handleUserText(text) {
-      const t = String(text||"").trim();
-      if (!t) return;
+    function actionLabel(code){
+      if (code === "A") return "Sedang menerima panggilan / chat sekarang";
+      if (code === "B") return "Saya sudah buat bayaran / transfer";
+      if (code === "C") return "Saya hampir kena (belum bayar)";
+      return code;
+    }
 
-      // If asking name
-      if (stage === "ASK_NAME") {
-        addUserMsg(t);
-        const nm = normalizeName(t);
-        if (!nm) {
-          await typeBotMessageSmooth("Maaf, saya tak jelas. Boleh beritahu nama anda sekali lagi? (contoh: Ali)", "");
-          return;
-        }
-        userName = nm;
-        localStorage.setItem("ccid_name", userName);
-        await typeBotMessageSmooth(`Terima kasih, ${userName}.`, "");
-        await showMainMenu();
+    async function showActionFollowup() {
+      stage = "ACTION_FOLLOWUP";
+      await typeBotMessageSmooth(
+        `Sekian tindakan yang perlu diambil berdasarkan pilihan anda (${lastActionLabel}).\n\n` +
+        `Adakah anda mahu pilih situasi lain?`,
+        ""
+      );
+      addChipsToLastBot([
+        { label:"A) Sedang menerima panggilan / chat sekarang", onClick: () => handleVictimAction("A") },
+        { label:"B) Saya sudah buat bayaran / transfer", onClick: () => handleVictimAction("B") },
+        { label:"C) Saya hampir kena (belum bayar)", onClick: () => handleVictimAction("C") },
+        { label:"Menu Utama", onClick: () => showMainMenu() },
+        { label:"Tiada", onClick: () => endConversation() },
+      ]);
+    }
+
+    async function handleVictimAction(code) {
+      stage = "MENU_3_DETAIL";
+      lastActionLabel = actionLabel(code);
+
+      addUserMsg(`${code}) ${lastActionLabel}`);
+
+      if (code === "A") {
+        await sendToAPI("Saya sedang dihubungi sekarang dan mereka minta OTP/TAC. Beri tindakan segera langkah demi langkah.");
+        await showActionFollowup();
         return;
       }
-
-      // In menu: allow user to type 1-4
-      if (stage === "MENU") {
-        if (/^[1-4]$/.test(t)) {
-          addUserMsg(t);
-          await handleMenuChoice(t);
-          return;
-        }
-        // if user types a sentence, treat as normal chat but add name context
-        addUserMsg(t);
-        await sendToAPI(`Nama pengguna: ${userName||"tidak dinyatakan"}. Soalan: ${t}`);
+      if (code === "B") {
+        await sendToAPI("Saya sudah buat bayaran/transfer kepada scammer. Beri langkah segera (hubungi bank, NSRC 997, simpan bukti, laporan polis) dan apa maklumat yang perlu saya sediakan.");
+        await showActionFollowup();
         return;
       }
-
-      // Other stages: allow quick numeric selection too
-      if (stage === "MENU_2_MODUS" || stage === "MODUS_FOLLOWUP") {
-  addUserMsg(t);
-
-  if (t.trim().toLowerCase() === "tiada" || t.trim().toLowerCase() === "no") {
-    await endConversation();
-    return;
-  }
-
-  // cuba padankan modus
-  const lower = t.toLowerCase();
-  const found = MODUS_OPTIONS.find(o => lower.includes(o.label.toLowerCase().split("(")[0].trim().toLowerCase())
-                                   || lower.includes(o.key.toLowerCase()));
-  if (found) {
-    await handleModusChoice(found);
-    return;
-  }
-
-  await typeBotMessageSmooth("Sila klik salah satu pilihan modus di atas, atau taip 'Tiada' untuk tamat.", "");
-  return;
-}
-
-      if (stage === "MENU_3_ACTION") {
-        addUserMsg(t);
-        const up = t.toUpperCase();
-        if (up === "A" || up === "B" || up === "C") {
-          await handleVictimAction(up);
-        } else {
-          await typeBotMessageSmooth("Sila pilih A, B, atau C ya (atau klik pilihan).", "");
-        }
+      if (code === "C") {
+        await sendToAPI("Saya hampir kena scam tetapi belum buat bayaran. Beri langkah pencegahan: block, report, semak nombor, dan red flags.");
+        await showActionFollowup();
         return;
       }
-
-      // Default fallback: send to API
-      addUserMsg(t);
-      await sendToAPI(`Nama pengguna: ${userName||"tidak dinyatakan"}. Soalan: ${t}`);
-if (stage === "END") {
-  addUserMsg(t);
-  await typeBotMessageSmooth("Perbualan telah tamat. Tekan Clear untuk mula semula.", "");
-  return;
-}
-
     }
 
     async function quickCheckNumber() {
@@ -887,7 +814,7 @@ if (stage === "END") {
       const value = msgInput.value.trim();
       if (!value) return alert("Sila masukkan nombor telefon atau akaun bank.");
 
-      addUserMsg("Semakan nombor: " + value);
+      addUserMsg("Semakan: " + value);
 
       setBusy(true);
       addBotDots();
@@ -905,7 +832,7 @@ if (stage === "END") {
 Jenis: ${data.number_type}
 Nombor: ${data.masked}
 
-Portal: ${data.official_check?.name || "-"}
+Portal: ${data.official_check?.name || "Semak Mule"}
 ${data.official_check?.url || SEMAK_MULE_URL}
 
 Langkah:
@@ -922,6 +849,77 @@ Nota: Semakan rasmi perlu dibuat di portal (bot tidak mengesahkan muktamad).`;
         setBusy(false);
         msgInput.focus();
       }
+    }
+
+    async function handleUserText(text) {
+      const t = String(text||"").trim();
+      if (!t) return;
+
+      if (stage === "END") {
+        addUserMsg(t);
+        await typeBotMessageSmooth("Perbualan telah tamat. Tekan Clear untuk mula semula.", "");
+        return;
+      }
+
+      if (stage === "ASK_NAME") {
+        addUserMsg(t);
+        const nm = normalizeName(t);
+        if (!nm) {
+          await typeBotMessageSmooth("Maaf, saya tak jelas. Boleh beritahu nama anda sekali lagi? (contoh: Ali)", "");
+          return;
+        }
+        userName = nm;
+        localStorage.setItem("ccid_name", userName);
+        await typeBotMessageSmooth(`Terima kasih, ${userName}.`, "");
+        await showMainMenu();
+        return;
+      }
+
+      // allow quit / menu anytime
+      const low = t.toLowerCase();
+      if (low === "tiada" || low === "tamat" || low === "stop" || low === "exit") {
+        addUserMsg(t);
+        await endConversation();
+        return;
+      }
+      if (low === "menu" || low === "menu utama") {
+        addUserMsg(t);
+        await showMainMenu();
+        return;
+      }
+
+      // Modus loop typing
+      if (stage === "MENU_2_MODUS" || stage === "MODUS_FOLLOWUP") {
+        addUserMsg(t);
+        const found = MODUS_OPTIONS.find(o => low.includes(o.label.toLowerCase().split("(")[0].trim().toLowerCase())
+                                          || low.includes(o.key.toLowerCase()));
+        if (found) { await handleModusChoice(found); return; }
+        await typeBotMessageSmooth("Sila klik pilihan modus di atas, atau taip 'Menu' / 'Tiada'.", "");
+        return;
+      }
+
+      // Action follow-up typing
+      if (stage === "MENU_3_ACTION" || stage === "ACTION_FOLLOWUP") {
+        addUserMsg(t);
+        const up = t.toUpperCase();
+        if (up === "A" || up === "B" || up === "C") { await handleVictimAction(up); return; }
+        await typeBotMessageSmooth("Sila pilih A/B/C (atau klik pilihan). Anda juga boleh taip 'Menu' atau 'Tiada'.", "");
+        return;
+      }
+
+      // Main menu number
+      if (stage === "MENU") {
+        if (/^[1-4]$/.test(t)) { addUserMsg(t); await handleMenuChoice(t); return; }
+        addUserMsg(t);
+        await sendToAPI(`Nama pengguna: ${userName||"tidak dinyatakan"}. Soalan: ${t}`);
+        return;
+      }
+
+      // allow 1-4 anytime
+      if (/^[1-4]$/.test(t)) { addUserMsg(t); await handleMenuChoice(t); return; }
+
+      addUserMsg(t);
+      await sendToAPI(`Nama pengguna: ${userName||"tidak dinyatakan"}. Soalan: ${t}`);
     }
 
     // ===== UI events =====
@@ -959,9 +957,7 @@ Nota: Semakan rasmi perlu dibuat di portal (bot tidak mengesahkan muktamad).`;
       btn.addEventListener("click", () => {
         msgInput.value = btn.getAttribute("data-fill") || "";
         msgInput.focus();
-        if (window.matchMedia("(max-width: 600px)").matches) {
-          quickGrid.classList.remove("open");
-        }
+        if (window.matchMedia("(max-width: 600px)").matches) quickGrid.classList.remove("open");
       });
     });
 
