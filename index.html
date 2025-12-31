@@ -117,6 +117,7 @@
         radial-gradient(700px 300px at 20% 10%, rgba(59,130,246,.12), transparent 60%),
         radial-gradient(700px 300px at 90% 10%, rgba(34,197,94,.08), transparent 60%),
         rgba(255,255,255,.03);
+      scroll-behavior: smooth; /* smoother jumps */
     }
 
     .msg{
@@ -196,24 +197,22 @@
       font-size: 12px;
     }
 
-    /* Typing dots (sebelum teks mula keluar) */
-    .typing{
+    .typingDots{
       display:inline-flex; gap:4px; align-items:center;
       padding: 2px 0;
     }
-    .typing span{
+    .typingDots span{
       width:6px; height:6px; border-radius:999px;
       background: rgba(255,255,255,.45);
       animation: bounce 1.05s infinite ease-in-out;
     }
-    .typing span:nth-child(2){ animation-delay: .15s; }
-    .typing span:nth-child(3){ animation-delay: .30s; }
+    .typingDots span:nth-child(2){ animation-delay: .15s; }
+    .typingDots span:nth-child(3){ animation-delay: .30s; }
     @keyframes bounce{
       0%,80%,100%{ transform: translateY(0); opacity:.55; }
       40%{ transform: translateY(-4px); opacity:1; }
     }
 
-    /* Cursor */
     .cursor{
       display:inline-block;
       width: 8px;
@@ -228,7 +227,6 @@
 </head>
 <body>
   <div class="container">
-
     <div class="topbar">
       <div class="brand">
         <div class="logo">CCID</div>
@@ -287,4 +285,359 @@
 
       <div class="panel chatWrap">
         <div class="panelHeader">
-          <h2>Chat</h2
+          <h2>Chat</h2>
+          <div class="small">Enter untuk hantar • Quick Check untuk semakan rasmi</div>
+        </div>
+
+        <div id="chat" aria-live="polite"></div>
+
+        <div class="composer">
+          <input id="msg" type="text" placeholder="Taip mesej… (contoh: Tolong semak 012-3456789)" autocomplete="off" />
+          <button id="quickCheck" class="btn" title="Semak nombor/akaun secara terus">✅ Quick Check</button>
+          <button id="send" class="btn primary">➡️ Send</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tukar ini jika URL Worker anda berbeza
+    const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
+
+    const ORIGIN = window.location.origin;
+    document.getElementById("origin").textContent = ORIGIN;
+
+    const chatEl = document.getElementById("chat");
+    const statusEl = document.getElementById("status");
+    const dotEl = document.getElementById("dot");
+    const hintEl = document.getElementById("hint");
+    const sendBtn = document.getElementById("send");
+    const quickBtn = document.getElementById("quickCheck");
+    const clearBtn = document.getElementById("clear");
+    const msgInput = document.getElementById("msg");
+
+    // typing cancellation token
+    let typingToken = 0;
+
+    function setHint(text) {
+      if (!text) {
+        hintEl.style.display = "none";
+        hintEl.textContent = "";
+        return;
+      }
+      hintEl.style.display = "block";
+      hintEl.textContent = text;
+    }
+
+    // Throttled scroll to bottom (avoid jumpiness)
+    let lastScrollAt = 0;
+    function scrollBottomThrottled(force = false) {
+      const now = performance.now();
+      if (!force && (now - lastScrollAt) < 80) return; // 80ms throttle
+      lastScrollAt = now;
+      chatEl.scrollTop = chatEl.scrollHeight;
+    }
+
+    function createMsgBubble(who) {
+      const wrap = document.createElement("div");
+      wrap.className = "msg " + who;
+
+      const content = document.createElement("div");
+      // we will update text node directly (fast)
+      const textNode = document.createTextNode("");
+      content.appendChild(textNode);
+
+      wrap.appendChild(content);
+
+      chatEl.appendChild(wrap);
+      scrollBottomThrottled(true);
+
+      return { wrap, content, textNode };
+    }
+
+    function setMeta(wrap, meta) {
+      if (!meta) return;
+      const m = document.createElement("div");
+      m.className = "meta";
+      m.textContent = meta;
+      wrap.appendChild(m);
+    }
+
+    function renderTextWithLinks(container, text) {
+      // rebuild at the end only (avoid reflow during typing)
+      container.innerHTML = "";
+      const parts = String(text || "").split(/(\s+)/);
+      parts.forEach(p => {
+        if (/^https?:\/\/[^\s]+$/.test(p)) {
+          const a = document.createElement("a");
+          a.href = p;
+          a.target = "_blank";
+          a.rel = "noreferrer";
+          a.textContent = p;
+          container.appendChild(a);
+        } else {
+          container.appendChild(document.createTextNode(p));
+        }
+      });
+    }
+
+    function addUserMsg(text) {
+      const { wrap, content } = createMsgBubble("user");
+      renderTextWithLinks(content, text);
+      return wrap;
+    }
+
+    function addBotDots() {
+      const { wrap, content } = createMsgBubble("bot");
+      content.innerHTML = `<span class="typingDots"><span></span><span></span><span></span></span>`;
+      wrap.id = "typingDots";
+      return wrap;
+    }
+
+    function removeBotDots() {
+      const el = document.getElementById("typingDots");
+      if (el) el.remove();
+    }
+
+    function setBusy(isBusy) {
+      sendBtn.disabled = isBusy;
+      quickBtn.disabled = isBusy;
+      msgInput.disabled = isBusy;
+      clearBtn.disabled = isBusy;
+    }
+
+    // Smooth REAL typewriter:
+    // - append 1 char at a time
+    // - BUT update DOM in batches (frame-based) to avoid lag
+    async function typeBotMessageSmooth(fullText, meta, profile) {
+      const token = ++typingToken;
+
+      const {
+        cps = 28,              // chars per second target
+        batchMs = 35,          // update DOM every ~35ms (smooth)
+        scrollMs = 90,         // scroll throttle already ~80ms
+        pausePunct = 130,      // extra pause after punctuation
+        pauseParagraph = 220,  // extra pause after blank line
+        cursorChar = "▍",
+      } = (profile || {});
+
+      const { wrap, content, textNode } = createMsgBubble("bot");
+      setMeta(wrap, meta);
+
+      const cursor = document.createElement("span");
+      cursor.className = "cursor";
+      cursor.textContent = cursorChar;
+      content.appendChild(cursor);
+
+      const text = String(fullText || "");
+      let i = 0;
+      let out = "";
+
+      // timing
+      const charDelay = Math.max(10, Math.floor(1000 / Math.max(10, cps)));
+      let nextDomFlushAt = performance.now() + batchMs;
+
+      // To simulate "human typing": small randomness
+      function jitter(n) {
+        const r = (Math.random() * 0.18 + 0.91); // 0.91 - 1.09
+        return Math.floor(n * r);
+      }
+
+      // main loop
+      while (i < text.length) {
+        if (token !== typingToken) return; // cancelled
+
+        const ch = text[i++];
+        out += ch;
+
+        // Decide extra pause
+        let extra = 0;
+        if (".,!?;:".includes(ch)) extra += pausePunct;
+        // detect paragraph break
+        if (ch === "\n" && text[i] === "\n") extra += pauseParagraph;
+
+        const now = performance.now();
+
+        // Flush DOM only at intervals (reduces jump/lag)
+        if (now >= nextDomFlushAt || i === text.length) {
+          textNode.nodeValue = out;
+          scrollBottomThrottled(false);
+          nextDomFlushAt = now + batchMs;
+          // Let browser paint (smooth)
+          await new Promise(r => requestAnimationFrame(r));
+        }
+
+        // Per-char timing (still 1 by 1)
+        await new Promise(r => setTimeout(r, jitter(charDelay + extra)));
+      }
+
+      // Remove cursor and linkify once at end
+      if (cursor && cursor.parentNode) cursor.remove();
+      renderTextWithLinks(content, out);
+      scrollBottomThrottled(true);
+    }
+
+    async function healthCheck() {
+      try {
+        const res = await fetch(API_BASE + "/", { method: "GET" });
+        const txt = await res.text();
+        let data = null;
+        try { data = JSON.parse(txt); } catch {}
+
+        if (res.ok && data && data.ok) {
+          statusEl.textContent = "API OK";
+          dotEl.className = "dot ok";
+        } else if (res.ok) {
+          statusEl.textContent = "API Reachable";
+          dotEl.className = "dot ok";
+        } else {
+          statusEl.textContent = `API Error ${res.status}`;
+          dotEl.className = "dot bad";
+        }
+      } catch {
+        statusEl.textContent = "API Failed";
+        dotEl.className = "dot bad";
+      }
+    }
+
+    async function postJson(url, payload) {
+      const res = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const text = await res.text();
+      if (!res.ok) throw new Error(`API ${res.status}: ${text.slice(0, 250)}`);
+
+      try { return JSON.parse(text); }
+      catch { throw new Error(`Response bukan JSON: ${text.slice(0, 250)}`); }
+    }
+
+    async function sendChat(message) {
+      setHint("");
+      addUserMsg(message);
+
+      setBusy(true);
+      addBotDots();
+
+      try {
+        const data = await postJson(API_BASE + "/api/chat", { message });
+        removeBotDots();
+
+        const meta = [
+          data.lang ? `lang=${data.lang}` : null,
+          data.intent ? `intent=${data.intent}` : null,
+          data.risk_level ? `risk=${data.risk_level}` : null,
+          (typeof data.risk_score === "number") ? `score=${data.risk_score}` : null,
+        ].filter(Boolean).join(" | ");
+
+        // Profile: high risk slower (easier to read), normal a bit faster
+        const isHigh = (data.risk_level === "HIGH");
+        await typeBotMessageSmooth(
+          data.reply?.message || "(tiada jawapan)",
+          meta,
+          isHigh
+            ? { cps: 22, batchMs: 40, pausePunct: 170, pauseParagraph: 260 }
+            : { cps: 30, batchMs: 30, pausePunct: 130, pauseParagraph: 220 }
+        );
+
+        if (data.slots && data.slots.number_last4) {
+          setHint(`Saya kesan nombor berakhir dengan ****${data.slots.number_last4}. Anda juga boleh guna Quick Check untuk semakan langkah rasmi.`);
+        } else {
+          setHint("");
+        }
+      } catch (e) {
+        removeBotDots();
+        await typeBotMessageSmooth(
+          `Ralat: ${e.message || e}`,
+          "",
+          { cps: 34, batchMs: 28, pausePunct: 110, pauseParagraph: 180 }
+        );
+        setHint("Semak API_BASE, CORS, dan pastikan endpoint /api/chat wujud.");
+      } finally {
+        setBusy(false);
+        msgInput.focus();
+      }
+    }
+
+    async function quickCheckNumber() {
+      setHint("");
+      const value = msgInput.value.trim();
+      if (!value) return alert("Sila masukkan nombor telefon atau akaun bank.");
+
+      addUserMsg("Semakan nombor: " + value);
+
+      setBusy(true);
+      addBotDots();
+
+      try {
+        const data = await postJson(API_BASE + "/api/check", { value, lang: "BM" });
+        removeBotDots();
+
+        if (!data.ok) {
+          await typeBotMessageSmooth("Semakan gagal. Sila cuba lagi.", "", { cps: 34, batchMs: 28 });
+          return;
+        }
+
+        const reply =
+          `🔎 Keputusan Semakan Rasmi\n` +
+          `Jenis: ${data.number_type}\n` +
+          `Nombor: ${data.masked}\n\n` +
+          `Portal: ${data.official_check?.name || "-"}\n` +
+          `${data.official_check?.url || "-"}\n\n` +
+          `Langkah:\n- ${(data.official_check?.steps || []).join("\n- ")}\n\n` +
+          `Nota: Semakan rasmi perlu dibuat di portal (bot tidak mengesahkan muktamad).`;
+
+        await typeBotMessageSmooth(reply, "", { cps: 28, batchMs: 32, pausePunct: 120, pauseParagraph: 210 });
+        msgInput.value = "";
+      } catch (e) {
+        removeBotDots();
+        await typeBotMessageSmooth(`Ralat semakan: ${e.message || e}`, "", { cps: 34, batchMs: 28 });
+        setHint("Jika ini berlaku, semak log Worker (wrangler tail) dan CORS.");
+      } finally {
+        setBusy(false);
+        msgInput.focus();
+      }
+    }
+
+    // Event listeners
+    sendBtn.addEventListener("click", () => {
+      const text = msgInput.value.trim();
+      if (!text) return;
+      msgInput.value = "";
+      sendChat(text);
+    });
+
+    msgInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") sendBtn.click();
+    });
+
+    quickBtn.addEventListener("click", quickCheckNumber);
+
+    clearBtn.addEventListener("click", () => {
+      // cancel typing immediately
+      typingToken++;
+      chatEl.innerHTML = "";
+      setHint("");
+      typeBotMessageSmooth("Chat dibersihkan. Anda boleh mula semula.", "", { cps: 34, batchMs: 28 });
+      msgInput.focus();
+    });
+
+    document.querySelectorAll("[data-fill]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        msgInput.value = btn.getAttribute("data-fill") || "";
+        msgInput.focus();
+      });
+    });
+
+    // init
+    healthCheck();
+    typeBotMessageSmooth(
+      "Hai! Saya CCID ScamBOT. Taip situasi anda atau nombor untuk semakan (contoh: Tolong semak 012-3456789).",
+      "",
+      { cps: 34, batchMs: 28, pausePunct: 110, pauseParagraph: 180 }
+    );
+  </script>
+</body>
+</html>
