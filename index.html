@@ -51,7 +51,7 @@
       </div>
     </div>
   </div>
-
+const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
   <script>
     // ✅ Paling selamat: guna domain semasa + endpoint relatif
     // Jika UI anda served dari Worker (assets), fetch("/api/chat") akan terus kena Worker yang sama.
@@ -99,7 +99,7 @@
 
     async function healthCheck() {
       try {
-        const res = await fetch("/", { method: "GET" });
+       const res = await fetch(API_BASE + "/", { method: "GET" });
         const txt = await res.text();
         let data = null;
         try { data = JSON.parse(txt); } catch {}
@@ -142,7 +142,7 @@
       setBusy(true);
 
       try {
-        const data = await postJson("/api/chat", { message });
+        const data = await postJson(API_BASE + "/api/chat", { message });
 
         const meta = [
           data.lang ? `lang=${data.lang}` : null,
@@ -179,7 +179,7 @@
       setBusy(true);
 
       try {
-        const data = await postJson("/api/check", { value, lang: "BM" });
+        const data = await postJson(API_BASE + "/api/check", { value, lang: "BM" });
 
         if (!data.ok) {
           addMsg("Semakan gagal. Sila cuba lagi.", "bot");
