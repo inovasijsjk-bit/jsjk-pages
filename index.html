@@ -363,15 +363,13 @@
     const quickGrid = document.getElementById("quickGrid");
 
     // ===== State =====
-    let typingToken = 0;
-    let stage = "ASK_NAME"; // ASK_NAME -> MENU -> (submenus)
-    let userName = localStorage.getItem("ccid_name") || "";
-
-    function setHint(text) {
-      if (!text) { hintEl.style.display="none"; hintEl.textContent=""; return; }
-      hintEl.style.display="block";
-      hintEl.textContent = text;
-    }
+  // ===== State =====
+let typingToken = 0;
+let stage = "ASK_NAME";
+let userName = localStorage.getItem("ccid_name") || "";
+let lastModusLabel = "";   // simpan pilihan modus terakhir
+let inModusLoop = false;   // bila true, kita akan ulang pilihan modus + "Tiada"
+}
 
     // Scroll throttle
     let lastScrollAt = 0;
@@ -683,38 +681,75 @@ Jika anda mahu, beritahu saya platform yang digunakan (WhatsApp/Telegram/FB/IG) 
       await typeBotMessageSmooth("Sila pilih 1, 2, 3 atau 4 ya.", "");
     }
 
-    async function handleModusChoice(opt) {
-      stage = "MENU_2_DETAIL";
-      // we can ask API for detailed info by sending a message that triggers that intent
-      // (this keeps compatibility with your worker logic)
-      const prompt = `Terangkan modus operandi: ${opt.label}. Senaraikan tanda-tanda (red flags) dan langkah pencegahan.`;
-      addUserMsg(opt.label);
+   async function handleModusChoice(opt) {
+  stage = "MENU_2_DETAIL";
+  inModusLoop = true;
+  lastModusLabel = opt.label;
 
-      setBusy(true);
-      addBotDots();
-      try{
-        const data = await postJson(API_BASE + "/api/chat", { message: prompt });
-        removeBotDots();
+  // Hantar ke API untuk penerangan modus
+  addUserMsg(opt.label);
 
-        const meta = [
-          data.lang ? `lang=${data.lang}` : null,
-          data.intent ? `intent=${data.intent}` : null,
-          data.risk_level ? `risk=${data.risk_level}` : null,
-          (typeof data.risk_score === "number") ? `score=${data.risk_score}` : null,
-        ].filter(Boolean).join(" | ");
+  setBusy(true);
+  addBotDots();
+  try{
+    const prompt =
+      `Terangkan modus operandi: ${opt.label}. ` +
+      `Senaraikan tanda-tanda (red flags), contoh situasi, dan langkah pencegahan. ` +
+      `Gunakan bahasa mudah difahami.`;
 
-        await typeBotMessageSmooth(data.reply?.message || "(tiada jawapan)", meta);
+    const data = await postJson(API_BASE + "/api/chat", { message: prompt });
+    removeBotDots();
 
-        await typeBotMessageSmooth("Jika mahu, pilih menu lain atau taip 1/2/3/4.", "");
-        stage = "MENU";
-      } catch(e){
-        removeBotDots();
-        await typeBotMessageSmooth(`Ralat: ${e.message||e}`, "");
-      } finally {
-        setBusy(false);
-        msgInput.focus();
+    const meta = [
+      data.lang ? `lang=${data.lang}` : null,
+      data.intent ? `intent=${data.intent}` : null,
+      data.risk_level ? `risk=${data.risk_level}` : null,
+      (typeof data.risk_score === "number") ? `score=${data.risk_score}` : null,
+    ].filter(Boolean).join(" | ");
+
+    await typeBotMessageSmooth(data.reply?.message || "(tiada jawapan)", meta);
+
+    // ✅ Follow-up khas modus (bukan balik ke menu 1/2/3/4)
+    stage = "MODUS_FOLLOWUP";
+    await typeBotMessageSmooth(
+      `Sekian maklumat berkenaan modus operandi (${lastModusLabel}).\n\n` +
+      `Adakah anda mahu bertanya berkenaan modus operandi lain?\n` +
+      `Sila pilih pilihan berikut:`,
+      ""
+    );
+
+    // Chips modus semula + "Tiada"
+    addChipsToLastBot([
+      ...MODUS_OPTIONS.map(m => ({
+        label: m.label,
+        onClick: () => handleModusChoice(m)
+      })),
+      {
+        label: "Tiada",
+        onClick: () => endConversation()
       }
-    }
+    ]);
+
+  } catch(e){
+    removeBotDots();
+    await typeBotMessageSmooth(`Ralat: ${e.message||e}`, "");
+  } finally {
+    setBusy(false);
+    msgInput.focus();
+  }
+}
+
+async function endConversation() {
+  inModusLoop = false;
+  stage = "END";
+  await typeBotMessageSmooth(
+    `Terima Kasih. Kami harap ianya membantu.\n\n` +
+    `Be Smart, Stay Alert.`,
+    ""
+  );
+  msgInput.placeholder = "Perbualan tamat. Tekan Clear untuk mula semula.";
+}
+
 
     async function handleVictimAction(code) {
       stage = "MENU_3_DETAIL";
@@ -804,14 +839,26 @@ Jika anda mahu, beritahu saya platform yang digunakan (WhatsApp/Telegram/FB/IG) 
       }
 
       // Other stages: allow quick numeric selection too
-      if (stage === "MENU_2_MODUS") {
-        addUserMsg(t);
-        // try match by keyword to one of the options
-        const found = MODUS_OPTIONS.find(o => t.toLowerCase().includes(o.label.toLowerCase().split(" ")[0].toLowerCase()));
-        if (found) return handleModusChoice(found);
-        await typeBotMessageSmooth("Anda boleh klik salah satu pilihan modus di atas untuk lebih tepat.", "");
-        return;
-      }
+      if (stage === "MENU_2_MODUS" || stage === "MODUS_FOLLOWUP") {
+  addUserMsg(t);
+
+  if (t.trim().toLowerCase() === "tiada" || t.trim().toLowerCase() === "no") {
+    await endConversation();
+    return;
+  }
+
+  // cuba padankan modus
+  const lower = t.toLowerCase();
+  const found = MODUS_OPTIONS.find(o => lower.includes(o.label.toLowerCase().split("(")[0].trim().toLowerCase())
+                                   || lower.includes(o.key.toLowerCase()));
+  if (found) {
+    await handleModusChoice(found);
+    return;
+  }
+
+  await typeBotMessageSmooth("Sila klik salah satu pilihan modus di atas, atau taip 'Tiada' untuk tamat.", "");
+  return;
+}
 
       if (stage === "MENU_3_ACTION") {
         addUserMsg(t);
@@ -827,6 +874,12 @@ Jika anda mahu, beritahu saya platform yang digunakan (WhatsApp/Telegram/FB/IG) 
       // Default fallback: send to API
       addUserMsg(t);
       await sendToAPI(`Nama pengguna: ${userName||"tidak dinyatakan"}. Soalan: ${t}`);
+if (stage === "END") {
+  addUserMsg(t);
+  await typeBotMessageSmooth("Perbualan telah tamat. Tekan Clear untuk mula semula.", "");
+  return;
+}
+
     }
 
     async function quickCheckNumber() {
