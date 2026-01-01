@@ -2,977 +2,612 @@
 <html lang="ms">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>CCID ScamBOT</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>CCID ChatBot</title>
   <style>
     :root{
-      --bg:#0b1220;
-      --stroke:rgba(255,255,255,.14);
+      --bg:#070b16;
+      --card:rgba(255,255,255,.06);
+      --stroke:rgba(255,255,255,.12);
       --text:rgba(255,255,255,.92);
       --muted:rgba(255,255,255,.68);
-      --ok:#22c55e;
-      --danger:#ef4444;
-      --shadow:0 18px 50px rgba(0,0,0,.45);
-      --radius:18px;
-      color-scheme:dark;
+      --accent:rgba(59,130,246,.95);
+      --good:rgba(34,197,94,.95);
+      --danger:rgba(239,68,68,.95);
+      color-scheme: dark;
     }
-    *{ box-sizing:border-box; }
+    *{box-sizing:border-box;}
+    html,body{height:100%;}
     body{
       margin:0;
-      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-      background: radial-gradient(1200px 600px at 20% 0%, rgba(59,130,246,.25), transparent 55%),
-                  radial-gradient(1200px 600px at 100% 20%, rgba(34,197,94,.18), transparent 55%),
-                  var(--bg);
+      font-family: system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:
+        radial-gradient(900px 520px at 20% 0%, rgba(59,130,246,.28), transparent 55%),
+        radial-gradient(900px 520px at 100% 10%, rgba(34,197,94,.16), transparent 55%),
+        var(--bg);
       color:var(--text);
-    }
-    a{ color:#93c5fd; }
-    .container{ max-width:1100px; margin:0 auto; padding:18px; }
-
-    .topbar{
-      display:flex; align-items:center; justify-content:space-between; gap:12px;
-      padding:14px 16px;
-      border:1px solid var(--stroke);
-      border-radius:var(--radius);
-      background: linear-gradient(90deg, rgba(59,130,246,.22), rgba(34,197,94,.10));
-      box-shadow:var(--shadow);
-    }
-    .brand{ display:flex; align-items:center; gap:12px; }
-    .logo{
-      width:42px; height:42px; border-radius:14px;
-      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.25), rgba(255,255,255,.06));
-      border:1px solid var(--stroke);
-      display:grid; place-items:center;
-      font-weight:800; letter-spacing:.5px;
-    }
-    .title{ display:flex; flex-direction:column; gap:2px; }
-    .title h1{ margin:0; font-size:16px; }
-    .title .sub{ margin:0; font-size:12px; color:var(--muted); }
-
-    .statusRow{
-      display:flex; align-items:center; gap:10px; flex-wrap:wrap;
-      justify-content:flex-end; font-size:12px; color:var(--muted);
-    }
-    .pill{
-      display:inline-flex; align-items:center; gap:6px;
-      border:1px solid var(--stroke);
-      background: rgba(255,255,255,.06);
-      padding:6px 10px;
-      border-radius:999px;
-      color:var(--text);
-    }
-    .dot{ width:8px; height:8px; border-radius:999px; background: rgba(255,255,255,.35); }
-    .dot.ok{ background: var(--ok); }
-    .dot.bad{ background: var(--danger); }
-
-    .layout{
-      display:grid;
-      grid-template-columns: 320px 1fr;
-      gap:14px;
-      margin-top:14px;
-    }
-
-    .panel{
-      border:1px solid var(--stroke);
-      background: rgba(255,255,255,.05);
-      border-radius:var(--radius);
-      box-shadow:var(--shadow);
       overflow:hidden;
     }
-    .panelHeader{
-      padding:12px 14px;
-      background: rgba(255,255,255,.06);
-      border-bottom: 1px solid var(--stroke);
-      display:flex; align-items:center; justify-content:space-between;
+
+    .app{height:100%;display:flex;flex-direction:column;align-items:center;}
+    .shell{
+      width:min(980px, 100%);
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      padding: clamp(10px, 2.5vw, 16px);
       gap:10px;
     }
-    .panelHeader h2{ margin:0; font-size:13px; letter-spacing:.2px; }
-    .panelBody{ padding:12px 14px; }
-    .small{ font-size:12px; color:var(--muted); line-height:1.35; }
-
-    .quickGrid{ display:grid; gap:10px; margin-top:10px; }
-    .qbtn{
-      width:100%;
-      text-align:left;
-      padding:10px 12px;
-      border-radius:14px;
+    header{
+      display:flex;align-items:center;justify-content:space-between;gap:10px;
       border:1px solid var(--stroke);
-      background: rgba(255,255,255,.06);
-      color:var(--text);
-      cursor:pointer;
-      transition: transform .08s ease, background .12s ease, border-color .12s ease;
+      background:linear-gradient(90deg, rgba(59,130,246,.18), rgba(34,197,94,.10));
+      border-radius:18px;padding:12px 14px;
     }
-    .qbtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.08); border-color: rgba(147,197,253,.35); }
-    .qbtn .t{ font-size:13px; font-weight:650; display:flex; align-items:center; gap:8px; }
-    .qbtn .d{ font-size:12px; color:var(--muted); margin-top:4px; }
+    .brand{display:flex;gap:10px;align-items:center;min-width:0;}
+    .logo{
+      width:36px;height:36px;border-radius:12px;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.14);
+      display:grid;place-items:center;flex:0 0 auto;
+    }
+    .titleWrap{min-width:0;}
+    .title{font-size:14px;margin:0;font-weight:700;letter-spacing:.2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .subtitle{margin:2px 0 0;font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .statusPill{
+      display:inline-flex;align-items:center;gap:8px;
+      border:1px solid var(--stroke);background:rgba(0,0,0,.18);
+      padding:7px 10px;border-radius:999px;font-size:12px;color:var(--muted);flex:0 0 auto;
+    }
+    .dot{width:8px;height:8px;border-radius:999px;background:rgba(255,255,255,.35);}
+    .dot.ok{background:rgba(34,197,94,.95);}
+    .dot.bad{background:rgba(239,68,68,.95);}
 
-    .chatWrap{ display:flex; flex-direction:column; height:74vh; min-height:560px; }
-    #chat{
-      flex:1;
-      overflow:auto;
-      padding:14px;
-      background:
-        radial-gradient(700px 300px at 20% 10%, rgba(59,130,246,.12), transparent 60%),
-        radial-gradient(700px 300px at 90% 10%, rgba(34,197,94,.08), transparent 60%),
-        rgba(255,255,255,.03);
-      scroll-behavior:smooth;
+    .chat{
+      flex:1 1 auto;
+      border:1px solid var(--stroke);
+      background:rgba(255,255,255,.05);
+      border-radius:18px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
     }
-    .msg{
-      max-width: 90%;
-      padding:10px 12px;
+
+    .messages{flex:1 1 auto;padding:14px;overflow:auto;scroll-behavior:smooth;}
+    .row{display:flex;gap:10px;margin:10px 0;align-items:flex-start;}
+    .row.user{justify-content:flex-end;}
+    .bubble{
+      max-width:min(680px, 92%);
+      border:1px solid rgba(255,255,255,.12);
+      background:rgba(0,0,0,.18);
       border-radius:16px;
-      margin:10px 0;
-      white-space: pre-wrap;
-      word-break: break-word;
-      border: 1px solid rgba(255,255,255,.10);
-      box-shadow: 0 8px 18px rgba(0,0,0,.22);
+      padding:10px 12px;
+      line-height:1.45;
+      font-size:14px;
+      white-space:pre-wrap;
+      word-wrap:break-word;
     }
-    .user{
-      margin-left:auto;
-      background: rgba(59,130,246,.18);
-      border-color: rgba(59,130,246,.22);
+    .row.user .bubble{background:rgba(59,130,246,.18);border-color:rgba(59,130,246,.22);}
+    .meta{font-size:11px;color:var(--muted);margin-top:6px;}
+    .quick{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+    .btn{
+      appearance:none;border:1px solid rgba(255,255,255,.14);
+      background:rgba(255,255,255,.06);color:var(--text);
+      padding:9px 10px;border-radius:12px;font-size:13px;cursor:pointer;
+      transition:transform .04s ease, background .15s ease;user-select:none;
     }
-    .bot{
-      margin-right:auto;
-      background: rgba(34,197,94,.10);
-      border-color: rgba(34,197,94,.18);
-    }
-    .meta{
-      margin-top: 8px;
-      font-size: 11px;
-      color: var(--muted);
-      opacity: .95;
-    }
+    .btn:hover{background:rgba(255,255,255,.09);}
+    .btn:active{transform:translateY(1px);}
+    .btn.primary{background:rgba(34,197,94,.14); border-color:rgba(34,197,94,.22);}
+    .btn.blue{background:rgba(59,130,246,.14); border-color:rgba(59,130,246,.22);}
+    .btn.danger{background:rgba(239,68,68,.14); border-color:rgba(239,68,68,.22);}
 
     .composer{
-      padding:12px 14px;
-      border-top:1px solid var(--stroke);
-      background: rgba(255,255,255,.06);
-      display:flex; gap:10px; align-items:center;
+      border-top:1px solid rgba(255,255,255,.10);
+      padding:10px;background:rgba(0,0,0,.14);
+      display:flex;gap:10px;align-items:center;
     }
-    input[type="text"]{
-      flex:1;
-      padding:12px 12px;
-      border-radius:14px;
-      border:1px solid rgba(255,255,255,.16);
-      background: rgba(0,0,0,.18);
-      color:var(--text);
-      outline:none;
+    .input{
+      flex:1 1 auto;border:1px solid rgba(255,255,255,.14);
+      background:rgba(0,0,0,.18);color:var(--text);
+      padding:12px 12px;border-radius:14px;outline:none;font-size:14px;min-width:0;
     }
-    input[type="text"]::placeholder{ color: rgba(255,255,255,.55); }
+    .send{
+      flex:0 0 auto;border-radius:14px;padding:12px 14px;
+      border:1px solid rgba(59,130,246,.22);
+      background:rgba(59,130,246,.18);
+      color:var(--text);cursor:pointer;font-weight:650;font-size:14px;
+    }
+    .send:active{transform:translateY(1px);}
 
-    .btn{
-      padding:12px 12px;
-      border-radius:14px;
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.08);
-      color: var(--text);
-      cursor:pointer;
-      transition: transform .08s ease, background .12s ease;
-      display:inline-flex; align-items:center; justify-content:center; gap:8px;
-      white-space:nowrap;
-    }
-    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); }
-    .btn.primary{
-      background: rgba(59,130,246,.22);
-      border-color: rgba(59,130,246,.28);
-    }
-    .btn.danger{
-      background: rgba(239,68,68,.16);
-      border-color: rgba(239,68,68,.22);
-    }
-    .btn:disabled{ opacity:.55; cursor:not-allowed; transform:none; }
-
-    .hint{
-      display:none;
-      margin:12px 14px 0;
-      padding:10px 12px;
-      border-radius:14px;
-      border:1px dashed rgba(255,255,255,.22);
-      background: rgba(255,255,255,.05);
-      color:var(--muted);
-      font-size:12px;
-    }
-
-    .typingDots{ display:inline-flex; gap:4px; align-items:center; padding:2px 0; }
-    .typingDots span{
-      width:6px; height:6px; border-radius:999px;
-      background: rgba(255,255,255,.45);
-      animation: bounce 1.05s infinite ease-in-out;
-    }
-    .typingDots span:nth-child(2){ animation-delay:.15s; }
-    .typingDots span:nth-child(3){ animation-delay:.30s; }
-    @keyframes bounce{
-      0%,80%,100%{ transform: translateY(0); opacity:.55; }
-      40%{ transform: translateY(-4px); opacity:1; }
-    }
-    .cursor{
-      display:inline-block;
-      width:8px;
-      margin-left:2px;
-      opacity:.9;
-      animation: blink .9s steps(1,end) infinite;
-    }
-    @keyframes blink{ 50%{ opacity:0; } }
-
-    .chips{ display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
-    .chip{
-      border:1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.07);
-      color: var(--text);
-      padding:8px 10px;
-      border-radius:999px;
-      cursor:pointer;
-      font-size:12px;
-      user-select:none;
-      transition: transform .08s ease, background .12s ease;
-    }
-    .chip:hover{ transform: translateY(-1px); background: rgba(255,255,255,.10); }
-
-    @media (max-width: 900px){
-      .layout{ display:flex; flex-direction:column; }
-      .leftPanel{ order:2; }
-      .rightPanel{ order:1; }
-      .chatWrap{ height:72vh; min-height:520px; }
-    }
-    @media (max-width: 600px){
-      .container{ padding:12px; }
-      .topbar{ flex-direction:column; align-items:flex-start; gap:10px; }
-      .statusRow{ justify-content:flex-start; width:100%; }
-      .statusRow .pill:last-child{ display:none; }
-
-      .composer{ flex-wrap:wrap; gap:8px; }
-      #msg{ width:100%; flex:1 1 100%; }
-      #quickCheck, #send{ flex:1 1 calc(50% - 4px); padding:12px 10px; }
-
-      .panelHeader{ padding:10px 12px; }
-      .panelBody{ padding:10px 12px; }
-    }
-
-    .collapseBtn{ display:none; width:100%; margin-top:10px; }
-    @media (max-width: 600px){
-      .collapseBtn{ display:inline-flex; }
-      .quickGrid{ display:none; }
-      .quickGrid.open{ display:grid; }
+    @media (max-width:520px){
+      header{padding:10px 12px;border-radius:16px;}
+      .logo{width:34px;height:34px;border-radius:12px;}
+      .messages{padding:12px;}
+      .bubble{font-size:14px; max-width: 94%;}
+      .composer{padding:10px; gap:8px;}
+      .send{padding:12px 12px;}
+      .statusPill{display:none;}
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <div class="topbar">
-      <div class="brand">
-        <div class="logo">CCID</div>
-        <div class="title">
-          <h1>CCID ScamBOT</h1>
-          <p class="sub">Chatbot rujukan anti-scam untuk orang awam (bukan pegawai sebenar) • Panduan & tindakan segera</p>
-        </div>
-      </div>
-      <div class="statusRow">
-        <span class="pill"><span id="dot" class="dot"></span><span id="status">Checking…</span></span>
-        <span class="pill">Origin: <code id="origin">-</code></span>
-      </div>
-    </div>
-
-    <div class="layout">
-      <div class="panel leftPanel">
-        <div class="panelHeader">
-          <h2>Quick Actions</h2>
-          <button id="clear" class="btn danger">🧹 Clear</button>
-        </div>
-        <div class="panelBody">
-          <div class="small">Anda juga boleh guna menu dalam chat untuk pengalaman lebih “hidup”.</div>
-
-          <button id="toggleQuick" class="btn collapseBtn">📌 Tunjuk / Sorok Quick Actions</button>
-
-          <div class="quickGrid" id="quickGrid">
-            <button class="qbtn" data-fill="1">
-              <div class="t">1) Semakan No. Telefon / Akaun Bank</div>
-              <div class="d">Panduan portal rasmi</div>
-            </button>
-            <button class="qbtn" data-fill="2">
-              <div class="t">2) Modus Operandi Scam</div>
-              <div class="d">Pilih kategori scam</div>
-            </button>
-            <button class="qbtn" data-fill="3">
-              <div class="t">3) Tindakan Jika Kena Scam</div>
-              <div class="d">Sedang dihubungi / sudah bayar / hampir kena</div>
-            </button>
-            <button class="qbtn" data-fill="4">
-              <div class="t">4) Cara Melaporkan</div>
-              <div class="d">997 (NSRC) + laporan polis</div>
-            </button>
+  <div class="app">
+    <div class="shell">
+      <header>
+        <div class="brand">
+          <div class="logo">🛡️</div>
+          <div class="titleWrap">
+            <div class="title">CCID ChatBot</div>
+            <div class="subtitle" id="subTitle">JSJK • Anti-Scam Assistance</div>
           </div>
-
-          <div class="hint" id="hint"></div>
         </div>
-      </div>
-
-      <div class="panel chatWrap rightPanel">
-        <div class="panelHeader">
-          <h2>Chat</h2>
-          <div class="small">Enter untuk hantar • Pilih chip untuk menu</div>
+        <div class="statusPill">
+          <span class="dot" id="dot"></span>
+          <span id="netText">Connecting…</span>
         </div>
+      </header>
 
-        <div id="chat" aria-live="polite"></div>
+      <section class="chat">
+        <div class="messages" id="messages"></div>
 
         <div class="composer">
-          <input id="msg" type="text" placeholder="Taip jawapan anda di sini…" autocomplete="off" />
-          <button id="quickCheck" class="btn" title="Semak nombor/akaun secara terus">✅ Quick Check</button>
-          <button id="send" class="btn primary">➡️ Send</button>
+          <input class="input" id="input" placeholder="Taip mesej…" autocomplete="off" />
+          <button class="send" id="send">Hantar</button>
         </div>
-      </div>
+      </section>
     </div>
   </div>
 
   <script>
-    // ===== Config =====
+    // =========================
+    // CONFIG
+    // =========================
     const API_BASE = "https://ccid-scambot-api.ccid-scambot.workers.dev";
-    const SEMAK_MULE_URL = "https://semakmule.rmp.gov.my/";
 
-    const MODUS_OPTIONS = [
-      { key:"PHONE_SCAM", label:"Phone Scam (Penyamaran / Ugutan)" },
-      { key:"INVESTMENT", label:"Tipu Pelaburan" },
-      { key:"LOVE_SCAM", label:"Love Scam" },
-      { key:"ECOMMERCE", label:"E-Dagang / Parcel Scam" },
-      { key:"JOB_SCAM", label:"Kerja Sambilan / Part-time Scam" },
-      { key:"LOAN_SCAM", label:"Pinjaman Tidak Wujud" },
-    ];
+    // Typing speed (kecil = laju)
+    let TYPE_DELAY_MS = 12;
+    let AFTER_MESSAGE_PAUSE_MS = 220;
 
-    const ORIGIN = window.location.origin;
-    document.getElementById("origin").textContent = ORIGIN;
+    // =========================
+    // STATE
+    // =========================
+    const State = {
+      ASK_NAME: "ASK_NAME",
+      MAIN_MENU: "MAIN_MENU",
+      MODE_MENU: "MODE_MENU",
+      ACTION_MENU: "ACTION_MENU",
+      REPORT_MENU: "REPORT_MENU",
+      CHECK_MENU: "CHECK_MENU",
+    };
 
-    const chatEl = document.getElementById("chat");
-    const statusEl = document.getElementById("status");
-    const dotEl = document.getElementById("dot");
-    const hintEl = document.getElementById("hint");
-    const sendBtn = document.getElementById("send");
-    const quickBtn = document.getElementById("quickCheck");
-    const clearBtn = document.getElementById("clear");
-    const msgInput = document.getElementById("msg");
-    const toggleQuickBtn = document.getElementById("toggleQuick");
-    const quickGrid = document.getElementById("quickGrid");
+    let state = State.ASK_NAME;
+    let userName = "";
+    let lang = "ms";
 
-    // ===== State =====
-    let typingToken = 0;
-    let stage = "ASK_NAME";
-    let userName = localStorage.getItem("ccid_name") || "";
-    let lastModusLabel = "";
-    let lastActionLabel = "";
+    // ✅ Dynamic lists from DB
+    let MODUS_CHOICES = [];   // [{code,label}]
+    let ACTION_CHOICES = [];  // [{code,label}]
 
-    function setHint(text) {
-      if (!text) { hintEl.style.display="none"; hintEl.textContent=""; return; }
-      hintEl.style.display="block";
-      hintEl.textContent = text;
+    // =========================
+    // DOM
+    // =========================
+    const elMessages = document.getElementById("messages");
+    const elInput = document.getElementById("input");
+    const elSend = document.getElementById("send");
+    const elDot = document.getElementById("dot");
+    const elNetText = document.getElementById("netText");
+
+    // =========================
+    // HELPERS
+    // =========================
+    function scrollToBottom() {
+      elMessages.scrollTop = elMessages.scrollHeight;
     }
 
-    let lastScrollAt = 0;
-    function scrollBottomThrottled(force=false) {
-      const now = performance.now();
-      if (!force && (now - lastScrollAt) < 70) return;
-      lastScrollAt = now;
-      chatEl.scrollTop = chatEl.scrollHeight;
-    }
+    function addBubble(text, who="bot", quickButtons=[]) {
+      const row = document.createElement("div");
+      row.className = "row " + (who === "user" ? "user" : "bot");
 
-    function createMsgBubble(who) {
-      const wrap = document.createElement("div");
-      wrap.className = "msg " + who;
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.textContent = text;
 
-      const content = document.createElement("div");
-      const textNode = document.createTextNode("");
-      content.appendChild(textNode);
-      wrap.appendChild(content);
+      row.appendChild(bubble);
+      elMessages.appendChild(row);
 
-      chatEl.appendChild(wrap);
-      scrollBottomThrottled(true);
-
-      return { wrap, content, textNode };
-    }
-
-    function setMeta(wrap, meta) {
-      if (!meta) return;
-      const m = document.createElement("div");
-      m.className = "meta";
-      m.textContent = meta;
-      wrap.appendChild(m);
-    }
-
-    function renderTextWithLinks(container, text) {
-      container.innerHTML = "";
-      const parts = String(text||"").split(/(\s+)/);
-      parts.forEach(p => {
-        if (/^https?:\/\/[^\s]+$/.test(p)) {
-          const a = document.createElement("a");
-          a.href = p; a.target="_blank"; a.rel="noreferrer";
-          a.textContent = p;
-          container.appendChild(a);
-        } else {
-          container.appendChild(document.createTextNode(p));
+      if (quickButtons && quickButtons.length) {
+        const quick = document.createElement("div");
+        quick.className = "quick";
+        for (const b of quickButtons) {
+          const btn = document.createElement("button");
+          btn.className = "btn " + (b.variant || "");
+          btn.textContent = b.text;
+          btn.onclick = () => handleUserInput(b.value, true);
+          quick.appendChild(btn);
         }
-      });
-    }
-
-    function addUserMsg(text) {
-      const { content } = createMsgBubble("user");
-      renderTextWithLinks(content, text);
-    }
-
-    function addBotDots() {
-      const { wrap, content } = createMsgBubble("bot");
-      content.innerHTML = `<span class="typingDots"><span></span><span></span><span></span></span>`;
-      wrap.id = "typingDots";
-    }
-    function removeBotDots() {
-      const el = document.getElementById("typingDots");
-      if (el) el.remove();
-    }
-
-    function addChipsToLastBot(chips) {
-      const msgs = Array.from(chatEl.querySelectorAll(".msg.bot"));
-      const last = msgs[msgs.length - 1];
-      if (!last) return;
-
-      const chipsWrap = document.createElement("div");
-      chipsWrap.className = "chips";
-
-      chips.forEach(ch => {
-        const b = document.createElement("div");
-        b.className = "chip";
-        b.textContent = ch.label;
-        b.addEventListener("click", () => ch.onClick());
-        chipsWrap.appendChild(b);
-      });
-
-      last.appendChild(chipsWrap);
-      scrollBottomThrottled(true);
-    }
-
-    function setBusy(isBusy) {
-      sendBtn.disabled = isBusy;
-      quickBtn.disabled = isBusy;
-      msgInput.disabled = isBusy;
-      clearBtn.disabled = isBusy;
-      if (toggleQuickBtn) toggleQuickBtn.disabled = isBusy;
-    }
-
-    async function typeBotMessageSmooth(fullText, meta, profile) {
-      const token = ++typingToken;
-
-      const {
-        cps = 52,
-        batchMs = 22,
-        pausePunct = 45,
-        pauseParagraph = 80,
-        cursorChar = "▍",
-      } = (profile || {});
-
-      const { wrap, content, textNode } = createMsgBubble("bot");
-      setMeta(wrap, meta);
-
-      const cursor = document.createElement("span");
-      cursor.className = "cursor";
-      cursor.textContent = cursorChar;
-      content.appendChild(cursor);
-
-      const text = String(fullText||"");
-      let i=0, out="";
-      const charDelay = Math.max(6, Math.floor(1000 / Math.max(10, cps)));
-      let nextFlush = performance.now() + batchMs;
-
-      function jitter(n){
-        const r = (Math.random()*0.10 + 0.95);
-        return Math.floor(n*r);
+        bubble.appendChild(document.createElement("div")).className = "meta";
+        bubble.appendChild(quick);
       }
 
-      while (i < text.length) {
-        if (token !== typingToken) return;
-
-        const ch = text[i++];
-        out += ch;
-
-        let extra = 0;
-        if (".,!?;:".includes(ch)) extra += pausePunct;
-        if (ch === "\n" && text[i] === "\n") extra += pauseParagraph;
-
-        const now = performance.now();
-        if (now >= nextFlush || i === text.length) {
-          textNode.nodeValue = out;
-          scrollBottomThrottled(false);
-          nextFlush = now + batchMs;
-          await new Promise(r => requestAnimationFrame(r));
-        }
-
-        await new Promise(r => setTimeout(r, jitter(charDelay + extra)));
-      }
-
-      if (cursor && cursor.parentNode) cursor.remove();
-      renderTextWithLinks(content, out);
-      scrollBottomThrottled(true);
+      scrollToBottom();
+      return bubble;
     }
 
-    async function postJson(url, payload) {
-      const res = await fetch(url, {
-        method: "POST",
-        headers: { "Content-Type":"application/json" },
+    function sleep(ms){ return new Promise(r => setTimeout(r, ms)); }
+
+    async function typeBotMessage(text, quickButtons=[]) {
+      const row = document.createElement("div");
+      row.className = "row bot";
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      row.appendChild(bubble);
+      elMessages.appendChild(row);
+      scrollToBottom();
+
+      for (let i = 0; i < text.length; i++) {
+        bubble.textContent += text[i];
+        if (i % 3 === 0) scrollToBottom();
+        await sleep(TYPE_DELAY_MS);
+      }
+      scrollToBottom();
+
+      if (quickButtons && quickButtons.length) {
+        const quick = document.createElement("div");
+        quick.className = "quick";
+        for (const b of quickButtons) {
+          const btn = document.createElement("button");
+          btn.className = "btn " + (b.variant || "");
+          btn.textContent = b.text;
+          btn.onclick = () => handleUserInput(b.value, true);
+          quick.appendChild(btn);
+        }
+        bubble.appendChild(document.createElement("div")).className = "meta";
+        bubble.appendChild(quick);
+      }
+
+      await sleep(AFTER_MESSAGE_PAUSE_MS);
+    }
+
+    function detectLanguageSimple(text) {
+      const t = (text || "").trim();
+      const englishHints = /\b(hi|hello|help|menu|option|report|scam|bank|police|investment|transfer)\b/i;
+      if (englishHints.test(t)) return "en";
+      return "ms";
+    }
+
+    function setNetwork(ok) {
+      elDot.classList.remove("ok","bad");
+      elDot.classList.add(ok ? "ok" : "bad");
+      elNetText.textContent = ok ? "Online" : "Offline";
+    }
+
+    async function ping() {
+      try {
+        const r = await fetch(API_BASE + "/", { method:"GET" });
+        setNetwork(r.ok);
+      } catch {
+        setNetwork(false);
+      }
+    }
+
+    async function callChatAPI(message) {
+      const payload = { message, lang };
+      const res = await fetch(API_BASE + "/api/chat", {
+        method:"POST",
+        headers:{ "Content-Type":"application/json" },
         body: JSON.stringify(payload),
       });
-
-      const text = await res.text();
-      if (!res.ok) throw new Error(`API ${res.status}: ${text.slice(0,250)}`);
-      try { return JSON.parse(text); }
-      catch { throw new Error(`Response bukan JSON: ${text.slice(0,250)}`); }
+      const data = await res.json().catch(()=>null);
+      if (!res.ok || !data?.ok) throw new Error(data?.error || ("HTTP " + res.status));
+      return data;
     }
 
-    async function healthCheck() {
-      try {
-        const res = await fetch(API_BASE + "/", { method:"GET" });
-        const txt = await res.text();
-        let data=null; try{ data=JSON.parse(txt); }catch{}
-        if (res.ok && data && data.ok) {
-          statusEl.textContent = "API OK";
-          dotEl.className = "dot ok";
-        } else if (res.ok) {
-          statusEl.textContent = "API Reachable";
-          dotEl.className = "dot ok";
-        } else {
-          statusEl.textContent = `API Error ${res.status}`;
-          dotEl.className = "dot bad";
-        }
-      } catch {
-        statusEl.textContent = "API Failed";
-        dotEl.className = "dot bad";
-      }
+    async function loadPublicLists() {
+      // load modus & actions based on current lang
+      const m = await fetch(API_BASE + "/api/public/modus/list?lang=" + encodeURIComponent(lang)).then(r=>r.json());
+      const a = await fetch(API_BASE + "/api/public/actions/list?lang=" + encodeURIComponent(lang)).then(r=>r.json());
+
+      MODUS_CHOICES = Array.isArray(m?.items) ? m.items : [];
+      ACTION_CHOICES = Array.isArray(a?.items) ? a.items : [];
+
+      // fallback if empty
+      if (!MODUS_CHOICES.length) MODUS_CHOICES = [{ code:"PHONE_SCAM", label: lang==="en"?"Phone Scam":"Phone Scam" }];
+      if (!ACTION_CHOICES.length) ACTION_CHOICES = [{ code:"A", label: lang==="en"?"Suspicious call":"Panggilan mencurigakan" }];
     }
 
-    function normalizeName(input) {
-      const raw = String(input||"").trim();
-      if (!raw) return "";
-      const m = raw.match(/nama\s+saya\s+([a-zA-Z\u00C0-\u024F'\- ]{2,40})/i);
-      const name = (m ? m[1] : raw).trim();
-      return name.split(/\s+/).slice(0,3).join(" ");
-    }
-
-    async function showGreetingAndAskName() {
-      stage = "ASK_NAME";
-      lastModusLabel = "";
-      lastActionLabel = "";
-      const greet =
-`Hai, Selamat Sejahtera!
-Saya CCID ChatBOT (rujukan anti-scam untuk orang awam).
-
-Boleh saya tahu nama anda?`;
-      await typeBotMessageSmooth(greet, "");
-      msgInput.placeholder = "Contoh: Ali / Nama saya Ali";
+    // =========================
+    // FLOWS
+    // =========================
+    async function showGreeting() {
+      await typeBotMessage(
+        "Hai, Selamat Sejahtera! Saya CCID ChatBot, Pegawai JSJK yang akan membantu anda.\n\nBoleh saya tahu nama anda?"
+      );
+      state = State.ASK_NAME;
+      elInput.placeholder = "Taip nama anda…";
     }
 
     async function showMainMenu() {
-      stage = "MENU";
-      const nm = userName ? userName : "tuan/puan";
-      const text =
-`Hai ${nm}! Apa yang saya boleh bantu anda hari ini?
+      state = State.MAIN_MENU;
+      elInput.placeholder = "Taip 1 / 2 / 3 / 4 atau pilih butang…";
 
-Pilih 1 daripada 4 menu berikut:`;
-      await typeBotMessageSmooth(text, "");
+      const ms = `Hai ${userName}! Apa yang saya boleh bantu anda hari ini?\n\nPilih 1 daripada 4 menu berikut:\n1) Membuat Semakan No. Telefon / No. Akaun Bank\n2) Pertanyaan Berkaitan Modus Operandi\n3) Tindakan Yang Perlu Diambil Jika Kena Scam\n4) Cara Melaporkan`;
+      const en = `Hi ${userName}! How can I help you today?\n\nChoose 1 of these 4 menus:\n1) Check phone number / bank account\n2) Scam modus operandi info\n3) What to do if you got scammed\n4) How to report`;
 
-      addChipsToLastBot([
-        { label:"1) Semakan No. Telefon / Akaun Bank", onClick: () => handleMenuChoice("1") },
-        { label:"2) Modus Operandi Scam", onClick: () => handleMenuChoice("2") },
-        { label:"3) Tindakan Jika Kena Scam", onClick: () => handleMenuChoice("3") },
-        { label:"4) Cara Melaporkan", onClick: () => handleMenuChoice("4") },
+      await typeBotMessage(lang === "en" ? en : ms, [
+        { text: lang==="en" ? "1) Check" : "1) Semakan", value: "1", variant:"blue" },
+        { text: lang==="en" ? "2) Modus" : "2) Modus", value: "2", variant:"blue" },
+        { text: lang==="en" ? "3) Actions" : "3) Tindakan", value: "3", variant:"blue" },
+        { text: lang==="en" ? "4) Report" : "4) Laporan", value: "4", variant:"blue" },
       ]);
+    }
 
-      msgInput.placeholder = "Taip 1, 2, 3, atau 4…";
+    async function showModusMenu() {
+      state = State.MODE_MENU;
+      elInput.placeholder = lang === "en" ? "Type modus number or 'none'…" : "Taip nombor modus atau 'tiada'…";
+
+      // refresh lists for current lang
+      await loadPublicLists();
+
+      const introMS = "Baik. Apakah modus operandi yang anda mahu tahu? Sila pilih salah satu:";
+      const introEN = "Alright. Which modus operandi would you like to know? Please choose one:";
+
+      const buttons = MODUS_CHOICES.map((m, i) => ({
+        text: (i+1) + ") " + (m.label || m.code),
+        value: String(i+1),
+      }));
+      buttons.push({ text: lang === "en" ? "None (Stop)" : "Tiada (Tamat)", value: "tiada", variant:"danger" });
+
+      await typeBotMessage(lang === "en" ? introEN : introMS, buttons);
+    }
+
+    async function showActionMenu() {
+      state = State.ACTION_MENU;
+      elInput.placeholder = lang === "en" ? "Type action number (or code)…" : "Taip nombor tindakan (atau code)…";
+
+      // refresh lists for current lang
+      await loadPublicLists();
+
+      const ms = "Baik. Sila pilih situasi anda:";
+      const en = "Alright. Please choose your situation:";
+
+      const buttons = ACTION_CHOICES.map((a, i) => ({
+        text: (i+1) + ") " + (a.label || a.code),
+        value: String(i+1),
+      }));
+
+      await typeBotMessage(lang === "en" ? en : ms, buttons);
+    }
+
+    async function showReportMenu() {
+      state = State.REPORT_MENU;
+      elInput.placeholder = lang === "en" ? "Type 'menu' to return…" : "Taip 'menu' untuk kembali…";
+
+      const ms =
+`Tindakan pantas:
+• Hubungi National Scam Response Center (NSRC) di talian 997 (segera).
+• Buat laporan polis di balai polis berhampiran.
+
+Cadangan:
+• Simpan bukti: resit transaksi, screenshot chat, nombor telefon, nama akaun, URL, dan masa kejadian.
+• Jika melibatkan perbankan, hubungi bank untuk sekat transaksi secepat mungkin.
+
+Taip "menu" untuk kembali ke menu utama.`;
+      const en =
+`Immediate actions:
+• Call National Scam Response Center (NSRC) at 997 (as soon as possible).
+• Lodge a police report at the nearest station.
+
+Tips:
+• Keep evidence: receipts, screenshots, phone numbers, account names, URLs, and timestamps.
+• If banking is involved, call your bank to block transactions ASAP.
+
+Type "menu" to return to the main menu.`;
+
+      await typeBotMessage(lang === "en" ? en : ms, [
+        { text: lang === "en" ? "Back to Menu" : "Kembali Menu", value: "menu", variant:"blue" }
+      ]);
+    }
+
+    async function showCheckMenu() {
+      state = State.CHECK_MENU;
+      elInput.placeholder = lang === "en" ? "Type phone/account number (or 'menu')…" : "Taip no telefon / no akaun (atau 'menu')…";
+
+      const ms =
+`Baik. Untuk semakan:
+• Anda boleh semak melalui portal rasmi Semak Mule (PDRM): https://semakmule.rmp.gov.my/
+
+Sila masukkan No. Telefon / No. Akaun Bank untuk saya bantu format semakan (atau taip "menu" untuk kembali).`;
+      const en =
+`Alright. For checking:
+• You may check via the official Semak Mule (PDRM) portal: https://semakmule.rmp.gov.my/
+
+Please enter the phone/bank account number (or type "menu" to return).`;
+
+      await typeBotMessage(lang === "en" ? en : ms, [
+        { text: lang === "en" ? "Back to Menu" : "Kembali Menu", value: "menu", variant:"blue" }
+      ]);
+    }
+
+    async function afterModusAnswered(lastLabel) {
+      const ms =
+`Sekian maklumat berkenaan modus operandi: ${lastLabel}.
+Adakah anda mahu bertanya berkenaan modus operandi lain?
+
+Sila pilih pilihan berikut:`;
+      const en =
+`That’s the information for: ${lastLabel}.
+Would you like to ask about another modus?
+
+Please choose:`;
+
+      await loadPublicLists();
+      const buttons = MODUS_CHOICES.map((m, i) => ({
+        text: (i+1) + ") " + (m.label || m.code),
+        value: String(i+1),
+      }));
+      buttons.push({ text: lang === "en" ? "None (Stop)" : "Tiada", value:"tiada", variant:"danger" });
+
+      await typeBotMessage(lang === "en" ? en : ms, buttons);
+      state = State.MODE_MENU;
     }
 
     async function endConversation() {
-      stage = "END";
-      await typeBotMessageSmooth(
-        `Terima Kasih. Kami harap ianya membantu.\n\nBe Smart, Stay Alert.`,
-        ""
-      );
-      msgInput.placeholder = "Perbualan tamat. Tekan Clear untuk mula semula.";
-    }
-
-    async function showMenuUtamaOrEndPrompt() {
-      await typeBotMessageSmooth(
-        `Adakah anda mahu kembali ke Menu Utama atau tamatkan perbualan?`,
-        ""
-      );
-      addChipsToLastBot([
-        { label:"Menu Utama", onClick: () => showMainMenu() },
-        { label:"Tiada", onClick: () => endConversation() }
+      const ms = "Terima kasih. Kami harap ianya membantu.\n\nBe Smart, Stay Alert.";
+      const en = "Thank you. We hope this helps.\n\nBe Smart, Stay Alert.";
+      await typeBotMessage(lang === "en" ? en : ms, [
+        { text: lang === "en" ? "Start Again" : "Mula Semula", value: "restart", variant:"primary" },
+        { text: lang === "en" ? "Main Menu" : "Menu Utama", value: "menu", variant:"blue" }
       ]);
+      state = State.MAIN_MENU;
     }
 
-    async function handleMenuChoice(choice) {
-      const c = String(choice||"").trim();
+    // =========================
+    // INPUT HANDLER
+    // =========================
+    async function handleUserInput(raw, fromButton=false) {
+      const text = String(raw || "").trim();
+      if (!text) return;
 
-      if (c === "1") {
-        stage = "MENU_1";
-        await typeBotMessageSmooth(
-`✅ Semakan No. Telefon / No. Akaun Bank
+      if (!fromButton) {
+        lang = detectLanguageSimple(text);
+      }
 
-1) Buka portal rasmi:
-${SEMAK_MULE_URL}
+      addBubble(text, "user");
+      elInput.value = "";
 
-2) Masukkan nombor telefon / nombor akaun bank.
-3) Semak keputusan dan simpan tangkapan skrin sebagai bukti.
-
-(Anda juga boleh taip nombor di sini dan tekan “Quick Check”.)`,
-          ""
-        );
-        await showMenuUtamaOrEndPrompt();
+      const lower = text.toLowerCase();
+      if (lower === "restart") {
+        userName = "";
+        lang = "ms";
+        state = State.ASK_NAME;
+        await showGreeting();
+        return;
+      }
+      if (lower === "menu") {
+        if (!userName) await showGreeting();
+        else await showMainMenu();
         return;
       }
 
-      if (c === "2") {
-        stage = "MENU_2_MODUS";
-        await typeBotMessageSmooth(
-`✅ Pertanyaan Berkaitan Modus Operandi Scam
-
-Modus operandi yang anda mahu tahu yang mana? (Pilih 1)`,
-          ""
-        );
-
-        addChipsToLastBot([
-          ...MODUS_OPTIONS.map(opt => ({
-            label: opt.label,
-            onClick: () => handleModusChoice(opt)
-          })),
-          { label:"Tiada", onClick: () => endConversation() }
-        ]);
-
-        msgInput.placeholder = "Klik pilihan modus… atau taip 'Tiada' untuk tamat";
-        return;
-      }
-
-      if (c === "3") {
-        stage = "MENU_3_ACTION";
-        await typeBotMessageSmooth(
-`✅ Tindakan Yang Perlu Diambil Jika Kena Scam
-
-Situasi anda yang mana satu? (Pilih 1)`,
-          ""
-        );
-
-        addChipsToLastBot([
-          { label:"A) Sedang menerima panggilan / chat sekarang", onClick: () => handleVictimAction("A") },
-          { label:"B) Saya sudah buat bayaran / transfer", onClick: () => handleVictimAction("B") },
-          { label:"C) Saya hampir kena (belum bayar)", onClick: () => handleVictimAction("C") },
-          { label:"Menu Utama", onClick: () => showMainMenu() },
-          { label:"Tiada", onClick: () => endConversation() },
-        ]);
-
-        msgInput.placeholder = "Pilih A/B/C…";
-        return;
-      }
-
-      if (c === "4") {
-        stage = "MENU_4_REPORT";
-        await typeBotMessageSmooth(
-`✅ Cara Melaporkan (Tindakan Pantas)
-
-1) Jika penipuan sedang berlaku / baru berlaku: hubungi National Scam Response Center (NSRC) di talian 997.
-2) Buat laporan polis di balai polis berhampiran.
-
-Bukti yang perlu disimpan:
-- resit/rekod transaksi (screenshot)
-- nombor akaun / nombor telefon / link / username scammer
-- chat/WhatsApp/Telegram dan rakaman panggilan (jika ada)
-- masa & tarikh kejadian`,
-          ""
-        );
-        await showMenuUtamaOrEndPrompt();
-        return;
-      }
-
-      await typeBotMessageSmooth("Sila pilih 1, 2, 3 atau 4 ya.", "");
-    }
-
-    async function handleModusChoice(opt) {
-      stage = "MENU_2_DETAIL";
-      lastModusLabel = opt.label;
-
-      addUserMsg(opt.label);
-
-      setBusy(true);
-      addBotDots();
-      try{
-        const prompt =
-          `Terangkan modus operandi: ${opt.label}. ` +
-          `Senaraikan tanda-tanda (red flags), contoh situasi, dan langkah pencegahan. ` +
-          `Guna bahasa mudah dan berstruktur.`;
-
-        const data = await postJson(API_BASE + "/api/chat", { message: prompt });
-        removeBotDots();
-
-        const meta = [
-          data.lang ? `lang=${data.lang}` : null,
-          data.intent ? `intent=${data.intent}` : null,
-          data.risk_level ? `risk=${data.risk_level}` : null,
-          (typeof data.risk_score === "number") ? `score=${data.risk_score}` : null,
-        ].filter(Boolean).join(" | ");
-
-        await typeBotMessageSmooth(data.reply?.message || "(tiada jawapan)", meta);
-
-        stage = "MODUS_FOLLOWUP";
-        await typeBotMessageSmooth(
-          `Sekian maklumat berkenaan modus operandi (${lastModusLabel}).\n\n` +
-          `Adakah anda mahu bertanya berkenaan modus operandi lain?\n` +
-          `Sila pilih pilihan berikut:`,
-          ""
-        );
-
-        addChipsToLastBot([
-          ...MODUS_OPTIONS.map(m => ({
-            label: m.label,
-            onClick: () => handleModusChoice(m)
-          })),
-          { label:"Menu Utama", onClick: () => showMainMenu() },
-          { label:"Tiada", onClick: () => endConversation() }
-        ]);
-
-      } catch(e){
-        removeBotDots();
-        await typeBotMessageSmooth(`Ralat: ${e.message||e}`, "");
-      } finally {
-        setBusy(false);
-        msgInput.focus();
-      }
-    }
-
-    async function sendToAPI(message) {
-      setBusy(true);
-      addBotDots();
-      try{
-        const data = await postJson(API_BASE + "/api/chat", { message });
-        removeBotDots();
-
-        const meta = [
-          data.lang ? `lang=${data.lang}` : null,
-          data.intent ? `intent=${data.intent}` : null,
-          data.risk_level ? `risk=${data.risk_level}` : null,
-          (typeof data.risk_score === "number") ? `score=${data.risk_score}` : null,
-        ].filter(Boolean).join(" | ");
-
-        await typeBotMessageSmooth(data.reply?.message || "(tiada jawapan)", meta);
-      } catch(e){
-        removeBotDots();
-        await typeBotMessageSmooth(`Ralat: ${e.message||e}`, "");
-      } finally {
-        setBusy(false);
-        msgInput.focus();
-      }
-    }
-
-    function actionLabel(code){
-      if (code === "A") return "Sedang menerima panggilan / chat sekarang";
-      if (code === "B") return "Saya sudah buat bayaran / transfer";
-      if (code === "C") return "Saya hampir kena (belum bayar)";
-      return code;
-    }
-
-    async function showActionFollowup() {
-      stage = "ACTION_FOLLOWUP";
-      await typeBotMessageSmooth(
-        `Sekian tindakan yang perlu diambil berdasarkan pilihan anda (${lastActionLabel}).\n\n` +
-        `Adakah anda mahu pilih situasi lain?`,
-        ""
-      );
-      addChipsToLastBot([
-        { label:"A) Sedang menerima panggilan / chat sekarang", onClick: () => handleVictimAction("A") },
-        { label:"B) Saya sudah buat bayaran / transfer", onClick: () => handleVictimAction("B") },
-        { label:"C) Saya hampir kena (belum bayar)", onClick: () => handleVictimAction("C") },
-        { label:"Menu Utama", onClick: () => showMainMenu() },
-        { label:"Tiada", onClick: () => endConversation() },
-      ]);
-    }
-
-    async function handleVictimAction(code) {
-      stage = "MENU_3_DETAIL";
-      lastActionLabel = actionLabel(code);
-
-      addUserMsg(`${code}) ${lastActionLabel}`);
-
-      if (code === "A") {
-        await sendToAPI("Saya sedang dihubungi sekarang dan mereka minta OTP/TAC. Beri tindakan segera langkah demi langkah.");
-        await showActionFollowup();
-        return;
-      }
-      if (code === "B") {
-        await sendToAPI("Saya sudah buat bayaran/transfer kepada scammer. Beri langkah segera (hubungi bank, NSRC 997, simpan bukti, laporan polis) dan apa maklumat yang perlu saya sediakan.");
-        await showActionFollowup();
-        return;
-      }
-      if (code === "C") {
-        await sendToAPI("Saya hampir kena scam tetapi belum buat bayaran. Beri langkah pencegahan: block, report, semak nombor, dan red flags.");
-        await showActionFollowup();
-        return;
-      }
-    }
-
-    async function quickCheckNumber() {
-      setHint("");
-      const value = msgInput.value.trim();
-      if (!value) return alert("Sila masukkan nombor telefon atau akaun bank.");
-
-      addUserMsg("Semakan: " + value);
-
-      setBusy(true);
-      addBotDots();
-      try{
-        const data = await postJson(API_BASE + "/api/check", { value, lang:"BM" });
-        removeBotDots();
-
-        if (!data.ok) {
-          await typeBotMessageSmooth("Semakan gagal. Sila cuba lagi.", "");
-          return;
-        }
-
-        const reply =
-`🔎 Keputusan Semakan Rasmi
-Jenis: ${data.number_type}
-Nombor: ${data.masked}
-
-Portal: ${data.official_check?.name || "Semak Mule"}
-${data.official_check?.url || SEMAK_MULE_URL}
-
-Langkah:
-- ${(data.official_check?.steps || []).join("\n- ")}
-
-Nota: Semakan rasmi perlu dibuat di portal (bot tidak mengesahkan muktamad).`;
-
-        await typeBotMessageSmooth(reply, "");
-        msgInput.value = "";
-      } catch(e){
-        removeBotDots();
-        await typeBotMessageSmooth(`Ralat semakan: ${e.message||e}`, "");
-      } finally {
-        setBusy(false);
-        msgInput.focus();
-      }
-    }
-
-    async function handleUserText(text) {
-      const t = String(text||"").trim();
-      if (!t) return;
-
-      if (stage === "END") {
-        addUserMsg(t);
-        await typeBotMessageSmooth("Perbualan telah tamat. Tekan Clear untuk mula semula.", "");
-        return;
-      }
-
-      if (stage === "ASK_NAME") {
-        addUserMsg(t);
-        const nm = normalizeName(t);
-        if (!nm) {
-          await typeBotMessageSmooth("Maaf, saya tak jelas. Boleh beritahu nama anda sekali lagi? (contoh: Ali)", "");
-          return;
-        }
-        userName = nm;
-        localStorage.setItem("ccid_name", userName);
-        await typeBotMessageSmooth(`Terima kasih, ${userName}.`, "");
+      if (state === State.ASK_NAME) {
+        userName = text.replace(/^nama saya\s+/i,"").slice(0, 40) || "Pengguna";
         await showMainMenu();
         return;
       }
 
-      // allow quit / menu anytime
-      const low = t.toLowerCase();
-      if (low === "tiada" || low === "tamat" || low === "stop" || low === "exit") {
-        addUserMsg(t);
-        await endConversation();
-        return;
-      }
-      if (low === "menu" || low === "menu utama") {
-        addUserMsg(t);
-        await showMainMenu();
-        return;
-      }
-
-      // Modus loop typing
-      if (stage === "MENU_2_MODUS" || stage === "MODUS_FOLLOWUP") {
-        addUserMsg(t);
-        const found = MODUS_OPTIONS.find(o => low.includes(o.label.toLowerCase().split("(")[0].trim().toLowerCase())
-                                          || low.includes(o.key.toLowerCase()));
-        if (found) { await handleModusChoice(found); return; }
-        await typeBotMessageSmooth("Sila klik pilihan modus di atas, atau taip 'Menu' / 'Tiada'.", "");
-        return;
+      if (state === State.MAIN_MENU) {
+        const choice = (text.match(/^[1-4]$/) ? text : null);
+        if (!choice) {
+          await typeBotMessage(lang === "en" ? "Please choose 1, 2, 3 or 4 (or tap a button)." : "Sila pilih 1, 2, 3 atau 4 (atau tekan butang).");
+          return;
+        }
+        if (choice === "1") return showCheckMenu();
+        if (choice === "2") return showModusMenu();
+        if (choice === "3") return showActionMenu();
+        if (choice === "4") return showReportMenu();
       }
 
-      // Action follow-up typing
-      if (stage === "MENU_3_ACTION" || stage === "ACTION_FOLLOWUP") {
-        addUserMsg(t);
-        const up = t.toUpperCase();
-        if (up === "A" || up === "B" || up === "C") { await handleVictimAction(up); return; }
-        await typeBotMessageSmooth("Sila pilih A/B/C (atau klik pilihan). Anda juga boleh taip 'Menu' atau 'Tiada'.", "");
-        return;
-      }
+      if (state === State.MODE_MENU) {
+        if (lower === "tiada" || lower === "none" || lower === "0") {
+          await endConversation();
+          return;
+        }
 
-      // Main menu number
-      if (stage === "MENU") {
-        if (/^[1-4]$/.test(t)) { addUserMsg(t); await handleMenuChoice(t); return; }
-        addUserMsg(t);
-        await sendToAPI(`Nama pengguna: ${userName||"tidak dinyatakan"}. Soalan: ${t}`);
+        await loadPublicLists();
+        const idx = Number(text) - 1;
+        if (Number.isFinite(idx) && idx >= 0 && idx < MODUS_CHOICES.length) {
+          const selected = MODUS_CHOICES[idx];
+          try {
+            const resp = await callChatAPI(selected.code);
+            const msg = resp?.reply?.message || (lang === "en" ? "No info found." : "Maklumat tidak dijumpai.");
+            await typeBotMessage(msg);
+            await afterModusAnswered(selected.label || selected.code);
+          } catch (e) {
+            await typeBotMessage((lang === "en" ? "Server error: " : "Ralat server: ") + e.message);
+          }
+          return;
+        }
+
+        await typeBotMessage(lang === "en" ? "Please select a valid number, or type 'none'." : "Sila pilih nombor yang betul, atau taip 'tiada'.");
         return;
       }
 
-      // allow 1-4 anytime
-      if (/^[1-4]$/.test(t)) { addUserMsg(t); await handleMenuChoice(t); return; }
+      if (state === State.ACTION_MENU) {
+        await loadPublicLists();
 
-      addUserMsg(t);
-      await sendToAPI(`Nama pengguna: ${userName||"tidak dinyatakan"}. Soalan: ${t}`);
+        // User can type number OR actual action code
+        let selected = null;
+        const idx = Number(text) - 1;
+        if (Number.isFinite(idx) && idx >= 0 && idx < ACTION_CHOICES.length) selected = ACTION_CHOICES[idx];
+
+        if (!selected) {
+          const codeTry = text.trim().toUpperCase();
+          selected = ACTION_CHOICES.find(a => String(a.code).toUpperCase() === codeTry);
+        }
+
+        if (!selected) {
+          await typeBotMessage(lang === "en" ? "Please choose a valid action." : "Sila pilih tindakan yang betul.");
+          return;
+        }
+
+        try {
+          const resp = await callChatAPI(selected.code);
+          const msg = resp?.reply?.message || (lang === "en" ? "No info found." : "Maklumat tidak dijumpai.");
+          await typeBotMessage(msg, [
+            { text: lang === "en" ? "Back to Menu" : "Kembali Menu", value: "menu", variant:"blue" },
+            { text: lang === "en" ? "Report" : "Cara Lapor", value: "4", variant:"" },
+          ]);
+          state = State.MAIN_MENU;
+        } catch (e) {
+          await typeBotMessage((lang === "en" ? "Server error: " : "Ralat server: ") + e.message);
+        }
+        return;
+      }
+
+      if (state === State.CHECK_MENU) {
+        if (lower === "menu") return showMainMenu();
+
+        const ms =
+`Saya tidak boleh semak terus dalam sistem bank, tetapi saya boleh bantu anda:
+• Semak nombor ini di portal rasmi Semak Mule: https://semakmule.rmp.gov.my/
+• Simpan bukti (screenshot/resit) jika ada.
+
+No yang anda masukkan: ${text}
+
+Taip "menu" untuk kembali.`;
+        const en =
+`I cannot check bank systems directly, but you can:
+• Check via the official Semak Mule portal: https://semakmule.rmp.gov.my/
+• Keep evidence (screenshots/receipts).
+
+You entered: ${text}
+
+Type "menu" to return.`;
+
+        await typeBotMessage(lang === "en" ? en : ms);
+        return;
+      }
+
+      await typeBotMessage(lang === "en" ? "Type 'menu' to continue." : "Taip 'menu' untuk teruskan.");
     }
 
-    // ===== UI events =====
-    sendBtn.addEventListener("click", () => {
-      const text = msgInput.value.trim();
-      msgInput.value = "";
-      handleUserText(text);
+    // =========================
+    // EVENTS
+    // =========================
+    elSend.addEventListener("click", () => handleUserInput(elInput.value));
+    elInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleUserInput(elInput.value);
     });
 
-    msgInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") sendBtn.click();
-    });
-
-    quickBtn.addEventListener("click", quickCheckNumber);
-
-    clearBtn.addEventListener("click", async () => {
-      typingToken++;
-      chatEl.innerHTML = "";
-      setHint("");
-      userName = "";
-      localStorage.removeItem("ccid_name");
-      stage = "ASK_NAME";
-      msgInput.value = "";
-      await showGreetingAndAskName();
-      msgInput.focus();
-    });
-
-    if (toggleQuickBtn) {
-      toggleQuickBtn.addEventListener("click", () => {
-        quickGrid.classList.toggle("open");
-      });
-    }
-
-    document.querySelectorAll("[data-fill]").forEach(btn => {
-      btn.addEventListener("click", () => {
-        msgInput.value = btn.getAttribute("data-fill") || "";
-        msgInput.focus();
-        if (window.matchMedia("(max-width: 600px)").matches) quickGrid.classList.remove("open");
-      });
-    });
-
-    // ===== init =====
+    // =========================
+    // INIT
+    // =========================
     (async function init(){
-      await healthCheck();
-
-      if (userName) {
-        stage = "MENU";
-        await typeBotMessageSmooth(`Selamat kembali, ${userName}!`, "");
-        await showMainMenu();
-      } else {
-        await showGreetingAndAskName();
-      }
-      msgInput.focus();
+      await ping();
+      await loadPublicLists(); // preload
+      await showGreeting();
     })();
   </script>
 </body>
